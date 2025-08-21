@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import keytar from 'keytar';
-import express from 'express';
+import { createServer } from 'http';
 import fetch from 'node-fetch';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -58,51 +58,66 @@ app.whenReady().then(() => {
   startOAuthServer(mainWindow);
 });
 
-
-
-function startOAuthServer(mainWindow: BrowserWindow) {
-  const app = express();
-
-  app.get('/callback', async (req, res) => {
-    const code = req.query.code as string;
-
-    if (!code) {
-      res.send("No code received");
-      return;
-    }
-
-    // Exchange code for token
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        code,
-        redirect_uri: REDIRECT_URI
-      })
-    });
-
-    const tokenData: GitHubTokenResponse = await tokenResponse.json() as GitHubTokenResponse;
-    const accessToken = tokenData.access_token;
-
-    if (accessToken) {
-      await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
-      console.log("Token stored securely in keytar.");
-      res.send("Login successful! You can close this window.");
-      mainWindow.webContents.send('oauth-success');
-    } else {
-      res.send("Failed to get access token.");
-    }
-  });
-
-  app.listen(3000, () => {
-    console.log("OAuth callback server running on http://localhost:3000");
-  });
-}
-
 function getEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing env var ${name}`);
   return value;
+}
+
+
+function startOAuthServer(mainWindow: BrowserWindow) {
+  const server = createServer(async (req, res) => {
+    if (!req.url) return;
+
+    const reqUrl = new URL(req.url, 'http://localhost:3000');
+
+    if (reqUrl.pathname === '/callback') {
+      const code = reqUrl.searchParams.get('code');
+
+      if (!code) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('No code received');
+        return;
+      }
+
+      try {
+        // Exchange code for token
+        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new URLSearchParams({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            code,
+            redirect_uri: REDIRECT_URI
+          })
+        });
+
+        const tokenData = await tokenResponse.json() as GitHubTokenResponse;
+        const accessToken = tokenData.access_token;
+
+        if (accessToken) {
+          await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
+          console.log("Token stored securely in keytar.");
+          res.writeHead(200, { 'Content-Type': 'text/plain' });
+          res.end('Login successful! You can close this window.');
+          mainWindow.webContents.send('oauth-success');
+        } else {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Failed to get access token.');
+        }
+      } catch (err) {
+        console.error(err);
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Server error');
+      }
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+    }
+  });
+
+  server.listen(3000, () => {
+    console.log('OAuth callback server running on http://localhost:3000');
+  });
 }
