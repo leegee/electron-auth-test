@@ -1,14 +1,17 @@
-document.getElementById('set').onclick = async () => {
+const setButton = document.getElementById('set');
+setButton?.addEventListener('click', async () => {
     await window.secureAPI.setPassword('MyApp', 'user@example.com', 'super-secret');
     alert('Secret set!');
-};
+});
 
-document.getElementById('get').onclick = async () => {
+const getButton = document.getElementById('get');
+getButton?.addEventListener('click', async () => {
     const secret = await window.secureAPI.getPassword('MyApp', 'user@example.com');
     alert('Retrieved secret: ' + secret);
-};
+});
 
-document.getElementById('login').addEventListener('click', () => {
+const loginButton = document.getElementById('login');
+loginButton?.addEventListener('click', () => {
     window.electronAPI.loginGitHub();
 });
 

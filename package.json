@@ -2,22 +2,30 @@
   "name": "electron-vite-clean",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/main.js",
+  "main": "src/main.ts",
   "scripts": {
+    "build": "tsc && vite build",
     "start": "electron .",
     "vite": "vite",
-    "dev": "concurrently \"vite\" \"cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\""
+    "dev": "concurrently \"vite\" \"cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron -r ts-node/register src/main.ts\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/electron": "^1.4.38",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
     "concurrently": "^9.2.0",
     "cross-env": "^10.0.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
     "vite": "^6.3.5"
   },
   "dependencies": {
+    "dotenv": "^17.2.1",
     "electron": "^37.3.1",
     "express": "^5.1.0",
     "keytar": "^7.9.0",
