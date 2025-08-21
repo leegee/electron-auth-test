@@ -1,10 +1,9 @@
-import 'dotenv/config';
-import { app, BrowserWindow, ipcMain, shell } from 'electron';
-import keytar from 'keytar';
-import { createServer } from 'http';
-import fetch from 'node-fetch';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer } from 'http';
+import { app, BrowserWindow, ipcMain } from 'electron';
+import keytar from 'keytar';
+import { config } from 'dotenv';
 
 interface GitHubTokenResponse {
   access_token: string;
@@ -15,11 +14,21 @@ interface GitHubTokenResponse {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const envFile = process.env.NODE_ENV === 'production'
+  ? '.env.production'
+  : '.env.development';
+
+config({ path: path.resolve(process.cwd(), envFile) });
+
 const CLIENT_ID = getEnv('CLIENT_ID');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET');
-const REDIRECT_URI = getEnv('REDIRECT_URI');
 const SERVICE_NAME = getEnv('SERVICE_NAME');
 const ACCOUNT_NAME = getEnv('ACCOUNT_NAME');
+
+const DEV_REDIRECT_URI = 'http://localhost:3000/callback';
+const PROD_REDIRECT_URI = 'myapp://callback';
+
+const REDIRECT_URI = process.env.NODE_ENV === 'production' ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
 
 let mainWindow: BrowserWindow;
 
@@ -28,88 +37,109 @@ async function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'), // xxx
+      preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
 
-  if (getEnv('VITE_DEV_SERVER_URL')) {
-    // Dev mode: load Vite server
-    mainWindow.loadURL(getEnv('VITE_DEV_SERVER_URL'));
+  if (process.env.NODE_ENV !== 'production' && process.env.VITE_DEV_SERVER_URL) {
+    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    // Production: load built HTML
     mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
   }
-
-  mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
 
-ipcMain.on('login-github', () => {
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`;
-  shell.openExternal(authUrl);
-});
+ipcMain.on('login-github', () => startGithubOAuth());
 
 app.whenReady().then(() => {
   createWindow();
-  startOAuthServer(mainWindow);
+
+  if (process.env.NODE_ENV !== 'production') {
+    startDevHttpServer();
+  } else {
+    if (!app.isDefaultProtocolClient('myapp')) {
+      app.setAsDefaultProtocolClient('myapp');
+    }
+  }
 });
 
-function getEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing env var ${name}`);
-  return value;
+function startGithubOAuth() {
+  const oauthWindow = new BrowserWindow({
+    width: 500,
+    height: 600,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`;
+  oauthWindow.loadURL(authUrl);
+
+  // Intercept redirects
+  oauthWindow.webContents.on('will-redirect', async (event, url) => {
+    if (url.startsWith(REDIRECT_URI)) {
+      event.preventDefault();
+
+      const parsedUrl = new URL(url);
+      const code = parsedUrl.searchParams.get('code');
+
+      if (code) {
+        await exchangeCodeForToken(code);
+      }
+
+      oauthWindow.close();
+    }
+  });
 }
 
+async function exchangeCodeForToken(code: string) {
+  try {
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new URLSearchParams({
+        client_id: CLIENT_ID,
+        client_secret: CLIENT_SECRET,
+        code,
+        redirect_uri: REDIRECT_URI
+      })
+    });
 
-function startOAuthServer(mainWindow: BrowserWindow) {
+    const tokenData = await tokenResponse.json() as GitHubTokenResponse;
+    const accessToken = tokenData.access_token;
+
+    if (accessToken) {
+      await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
+      console.log("Token stored securely in keytar.");
+      mainWindow?.webContents.send('oauth-success');
+    } else {
+      console.error("Failed to get access token");
+    }
+  } catch (err) {
+    console.error("Error exchanging code for token:", err);
+  }
+}
+
+function startDevHttpServer() {
   const server = createServer(async (req, res) => {
     if (!req.url) return;
-
-    const reqUrl = new URL(req.url, 'http://localhost:3000');
+    const reqUrl = new URL(req.url, DEV_REDIRECT_URI);
 
     if (reqUrl.pathname === '/callback') {
       const code = reqUrl.searchParams.get('code');
 
-      if (!code) {
+      if (code) {
+        await exchangeCodeForToken(code);
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('Login successful! You can close this window.');
+      } else {
         res.writeHead(400, { 'Content-Type': 'text/plain' });
         res.end('No code received');
-        return;
-      }
-
-      try {
-        // Exchange code for token
-        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-          method: 'POST',
-          headers: { 'Accept': 'application/json' },
-          body: new URLSearchParams({
-            client_id: CLIENT_ID,
-            client_secret: CLIENT_SECRET,
-            code,
-            redirect_uri: REDIRECT_URI
-          })
-        });
-
-        const tokenData = await tokenResponse.json() as GitHubTokenResponse;
-        const accessToken = tokenData.access_token;
-
-        if (accessToken) {
-          await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
-          console.log("Token stored securely in keytar.");
-          res.writeHead(200, { 'Content-Type': 'text/plain' });
-          res.end('Login successful! You can close this window.');
-          mainWindow.webContents.send('oauth-success');
-        } else {
-          res.writeHead(500, { 'Content-Type': 'text/plain' });
-          res.end('Failed to get access token.');
-        }
-      } catch (err) {
-        console.error(err);
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Server error');
       }
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -118,6 +148,24 @@ function startOAuthServer(mainWindow: BrowserWindow) {
   });
 
   server.listen(3000, () => {
-    console.log('OAuth callback server running on http://localhost:3000');
+    console.log(`Dev HTTP server running on ${DEV_REDIRECT_URI}`);
   });
 }
+
+function getEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing env var ${name}`);
+  return value;
+}
+
+app.on('open-url', async (event, url) => {
+  event.preventDefault();
+  if (!url.startsWith(PROD_REDIRECT_URI)) return;
+
+  const parsedUrl = new URL(url);
+  const code = parsedUrl.searchParams.get('code');
+
+  if (code) {
+    await exchangeCodeForToken(code);
+  }
+});
