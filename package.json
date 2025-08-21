@@ -1,5 +1,5 @@
 {
-  "name": "electron-vite-clean",
+  "name": "electron-auth-test",
   "version": "1.0.0",
   "type": "module",
   "main": "src/main.ts",
@@ -27,8 +27,16 @@
   "dependencies": {
     "dotenv": "^17.2.1",
     "electron": "^37.3.1",
-    "express": "^5.1.0",
-    "keytar": "^7.9.0",
-    "node-fetch": "^3.3.2"
+    "keytar": "^7.9.0"
+  },
+  "build": {
+    "protocols": [
+      {
+        "name": "ElectronTest Protocol",
+        "schemes": [
+          "myapp"
+        ]
+      }
+    ]
   }
 }
