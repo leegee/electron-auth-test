@@ -34,6 +34,21 @@ const REDIRECT_URI = isPackaged || isProd ? PROD_REDIRECT_URI : DEV_REDIRECT_URI
 
 let mainWindow: BrowserWindow;
 
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
+  app.on('second-instance', async (event, argv) => {
+    // Windows/Linux pass the protocol URL as a command line argument
+    const urlArg = argv.find(a => a.startsWith('myapp://'));
+    if (urlArg) {
+      const code = new URL(urlArg).searchParams.get('code');
+      if (code) await exchangeCodeForToken(code);
+      mainWindow?.focus();
+    }
+  });
+}
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -49,7 +64,6 @@ async function createWindow() {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.webContents.openDevTools();
     mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
     mainWindow.webContents.openDevTools();
   }
@@ -88,23 +102,15 @@ function startGithubOAuth() {
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`;
   oauthWindow.loadURL(authUrl);
 
-  // Intercept redirects
+  // Intercept redirects inside the OAuth window
   oauthWindow.webContents.on('will-redirect', async (event, url) => {
-    console.log('will-direct entered with', url, 'expecting', REDIRECT_URI);
     if (url.startsWith(REDIRECT_URI)) {
       event.preventDefault();
-
-      const parsedUrl = new URL(url);
-      const code = parsedUrl.searchParams.get('code');
-
-      if (code) {
-        await exchangeCodeForToken(code);
-      }
-
+      const code = new URL(url).searchParams.get('code');
+      if (code) await exchangeCodeForToken(code);
       oauthWindow.close();
     }
   });
-
 }
 
 async function exchangeCodeForToken(code: string) {
@@ -126,7 +132,7 @@ async function exchangeCodeForToken(code: string) {
     if (accessToken) {
       await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
       console.log("Token stored securely in keytar.");
-      mainWindow.webContents.send('oauth-success');
+      mainWindow?.webContents.send('oauth-success');
     } else {
       console.error("Failed to get access token");
     }
@@ -142,7 +148,6 @@ function startDevHttpServer() {
 
     if (reqUrl.pathname === '/callback') {
       const code = reqUrl.searchParams.get('code');
-
       if (code) {
         await exchangeCodeForToken(code);
         res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -172,10 +177,6 @@ app.on('open-url', async (event, url) => {
   event.preventDefault();
   if (!url.startsWith(PROD_REDIRECT_URI)) return;
 
-  const parsedUrl = new URL(url);
-  const code = parsedUrl.searchParams.get('code');
-
-  if (code) {
-    await exchangeCodeForToken(code);
-  }
+  const code = new URL(url).searchParams.get('code');
+  if (code) await exchangeCodeForToken(code);
 });
