@@ -1,7 +1,6 @@
-const { contextBridge } = require('electron');
-const keytar = require('keytar');
+const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('secureAPI', {
-    setPassword: (service, account, secret) => keytar.setPassword(service, account, secret),
-    getPassword: (service, account) => keytar.getPassword(service, account)
+contextBridge.exposeInMainWorld('electronAPI', {
+    loginGitHub: () => ipcRenderer.send('login-github'),
+    onOAuthSuccess: (callback) => ipcRenderer.on('oauth-success', callback)
 });

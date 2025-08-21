@@ -7,3 +7,11 @@ document.getElementById('get').onclick = async () => {
     const secret = await window.secureAPI.getPassword('MyApp', 'user@example.com');
     alert('Retrieved secret: ' + secret);
 };
+
+document.getElementById('login').addEventListener('click', () => {
+    window.electronAPI.loginGitHub();
+});
+
+window.electronAPI.onOAuthSuccess(() => {
+    alert("Login successful!");
+});

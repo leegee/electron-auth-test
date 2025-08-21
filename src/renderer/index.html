@@ -2,18 +2,24 @@
 <html>
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Hello World!</title>
   <link rel="stylesheet" href="index.css" />
 </head>
 
 <body>
+  <h1>Electron GitHub OAuth</h1>
+  <button id="login">Login with GitHub</button>
+  <p id="status"></p>
 
-  <h1>Electron Keytar Test</h1>
-  <button id="set">Set Secret</button>
-  <button id="get">Get Secret</button>
+  <script>
+    const loginBtn = document.getElementById('login');
+    const status = document.getElementById('status');
 
-  <script type="module" src="./index.js"></script>
-</body>
+    loginBtn.addEventListener('click', () => {
+      window.electronAPI.loginGitHub();
+    });
 
-</html>
+    window.electronAPI.onOAuthSuccess(() => {
+      status.innerText = "Logged in with GitHub";
+      loginBtn.setAttribute('style', 'display:none')
+    });
+  </script>
