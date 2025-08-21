@@ -1,15 +1,12 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
-const path = require('path');
-const keytar = require('keytar');
-const express = require('express');
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const SERVICE_NAME = 'electron-github-oauth';
-const ACCOUNT_NAME = 'github-token';
+import { startOAuthServer } from './server/auth-callback.js';
+import { CLIENT_ID, REDIRECT_URI } from './auth.config.js';
 
-// GitHub OAuth config
-const CLIENT_ID = 'Ov23ligWErUK2Wub3gTT';
-const CLIENT_SECRET = 'a24a2465f57cbbc0e398a729e388b996756057a0';
-const REDIRECT_URI = 'http://localhost:3000/callback';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow;
 
@@ -27,48 +24,8 @@ async function createWindow() {
   mainWindow.loadFile('src/renderer/index.html');
 
   mainWindow.webContents.openDevTools();
-}
 
-// Mini Express server to handle OAuth2 callback
-function startOAuthServer() {
-  const app = express();
-
-  app.get('/callback', async (req, res) => {
-    const code = req.query.code;
-
-    if (!code) {
-      res.send("No code received");
-      return;
-    }
-
-    // Exchange code for token
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: new URLSearchParams({
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        code,
-        redirect_uri: REDIRECT_URI
-      })
-    });
-
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-
-    if (accessToken) {
-      await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
-      console.log("Token stored securely in keytar.");
-      res.send("Login successful! You can close this window.");
-      mainWindow.webContents.send('oauth-success');
-    } else {
-      res.send("Failed to get access token.");
-    }
-  });
-
-  app.listen(3000, () => {
-    console.log("OAuth callback server running on http://localhost:3000");
-  });
+  return mainWindow;
 }
 
 ipcMain.on('login-github', () => {
@@ -78,5 +35,5 @@ ipcMain.on('login-github', () => {
 
 app.whenReady().then(() => {
   createWindow();
-  startOAuthServer();
+  startOAuthServer(mainWindow);
 });
