@@ -2,23 +2,28 @@
   "name": "electron-auth-test",
   "version": "1.0.0",
   "type": "module",
-  "main": "src/main.ts",
+  "main": "dist/main.js",
   "scripts": {
-    "build": "tsc && vite build",
-    "start": "electron .",
+    "bundle": "cross-env NODE_ENV=production tsc && vite build && electron-builder",
+    "build:dev": "cross-env NODE_ENV=development tsc && vite build",
+    "build:prod": "cross-env NODE_ENV=production tsc && vite build && cp src/preload.cjs dist/preload.cjs",
+    "build": "npm run build:prod",
+    "start": "cross-env NODE_ENV=production electron .",
     "vite": "vite",
-    "dev": "concurrently \"vite\" \"cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron -r ts-node/register src/main.ts\""
+    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Testing Electron/OAuth/keytar",
   "devDependencies": {
     "@types/electron": "^1.4.38",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
     "concurrently": "^9.2.0",
     "cross-env": "^10.0.0",
+    "electron": "^37.3.1",
+    "electron-builder": "^26.0.12",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.2",
@@ -26,17 +31,36 @@
   },
   "dependencies": {
     "dotenv": "^17.2.1",
-    "electron": "^37.3.1",
     "keytar": "^7.9.0"
   },
   "build": {
+    "appId": "com.example.myapp",
+    "productName": "MyApp",
+    "directories": {
+      "buildResources": "assets",
+      "output": "dist_electron"
+    },
+    "files": [
+      ".env.production",
+      "dist/**/*",
+      "package.json",
+      "renderer/**/*"
+    ],
     "protocols": [
       {
-        "name": "ElectronTest Protocol",
+        "name": "MyApp Protocol",
         "schemes": [
           "myapp"
         ]
       }
-    ]
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.utilities"
+    }
   }
 }

@@ -14,7 +14,9 @@ interface GitHubTokenResponse {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const envFile = process.env.NODE_ENV === 'production'
+const isPackaged = app.isPackaged;
+const isProd = process.env.NODE_ENV === 'production';
+const envFile = isPackaged || isProd
   ? '.env.production'
   : '.env.development';
 
@@ -28,7 +30,7 @@ const ACCOUNT_NAME = getEnv('ACCOUNT_NAME');
 const DEV_REDIRECT_URI = 'http://localhost:3000/callback';
 const PROD_REDIRECT_URI = 'myapp://callback';
 
-const REDIRECT_URI = process.env.NODE_ENV === 'production' ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
+const REDIRECT_URI = isPackaged || isProd ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
 
 let mainWindow: BrowserWindow;
 
@@ -37,17 +39,19 @@ async function createWindow() {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
       nodeIntegration: false
     }
   });
 
-  if (process.env.NODE_ENV !== 'production' && process.env.VITE_DEV_SERVER_URL) {
+  if ((isPackaged || isProd) && process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
+    mainWindow.webContents.openDevTools();
     mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+    mainWindow.webContents.openDevTools();
   }
 
   return mainWindow;
@@ -58,7 +62,11 @@ ipcMain.on('login-github', () => startGithubOAuth());
 app.whenReady().then(() => {
   createWindow();
 
-  if (process.env.NODE_ENV !== 'production') {
+  console.log('NODE_ENV = ', process.env.NODE_ENV);
+  console.log('isProd = ', isProd);
+  console.log('isPackaged = ', isPackaged);
+
+  if (!isPackaged) {
     startDevHttpServer();
   } else {
     if (!app.isDefaultProtocolClient('myapp')) {
@@ -82,6 +90,7 @@ function startGithubOAuth() {
 
   // Intercept redirects
   oauthWindow.webContents.on('will-redirect', async (event, url) => {
+    console.log('will-direct entered with', url, 'expecting', REDIRECT_URI);
     if (url.startsWith(REDIRECT_URI)) {
       event.preventDefault();
 
@@ -95,6 +104,7 @@ function startGithubOAuth() {
       oauthWindow.close();
     }
   });
+
 }
 
 async function exchangeCodeForToken(code: string) {
@@ -116,7 +126,7 @@ async function exchangeCodeForToken(code: string) {
     if (accessToken) {
       await keytar.setPassword(SERVICE_NAME, ACCOUNT_NAME, accessToken);
       console.log("Token stored securely in keytar.");
-      mainWindow?.webContents.send('oauth-success');
+      mainWindow.webContents.send('oauth-success');
     } else {
       console.error("Failed to get access token");
     }
