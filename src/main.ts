@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
@@ -87,12 +86,22 @@ async function createWindow() {
     }
   }
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
 
 ipcMain.on('login-github', () => startGithubOAuth());
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+app.on('before-quit', () => {
+  console.log('App quitting...');
+});
 
 app.whenReady().then(() => {
   createWindow();
