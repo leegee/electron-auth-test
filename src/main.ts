@@ -87,7 +87,7 @@ async function createWindow() {
     }
   }
 
-  mainWindow.webContents.openDevTools();
+  // mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
