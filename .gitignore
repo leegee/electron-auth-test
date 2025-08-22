@@ -1,5 +1,7 @@
 node_modules
 .env
-.env*
+.env.development
+.env.production
 dist/
 dist_electron/
+test-results
