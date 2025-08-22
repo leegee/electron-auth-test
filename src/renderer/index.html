@@ -15,6 +15,7 @@
     const status = document.getElementById('status');
 
     loginBtn.addEventListener('click', () => {
+      loginBtn.setAttribute('disabled', true);
       window.electronAPI.loginGitHub();
     });
 
