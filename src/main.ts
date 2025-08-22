@@ -113,6 +113,8 @@ function startGithubOAuth() {
   const oauthWindow = new BrowserWindow({
     width: 500,
     height: 600,
+    alwaysOnTop: true,
+    focusable: true,
     webPreferences: {
       backgroundThrottling: false,
       contextIsolation: true,
@@ -123,9 +125,6 @@ function startGithubOAuth() {
 
   oauthWindow.setMenu(null);
 
-  const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`;
-  oauthWindow.loadURL(authUrl);
-
   // Intercept redirects inside the OAuth window
   oauthWindow.webContents.on('will-redirect', async (event, url) => {
     if (url.startsWith(REDIRECT_URI)) {
@@ -135,6 +134,12 @@ function startGithubOAuth() {
       oauthWindow.close();
     }
   });
+
+  oauthWindow.show();
+  oauthWindow.focus();
+  oauthWindow.loadURL(
+    `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`
+  );
 }
 
 async function exchangeCodeForToken(code: string) {
