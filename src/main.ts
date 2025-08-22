@@ -1,6 +1,7 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { createServer } from 'http';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:http';
+
 import { app, BrowserWindow, ipcMain } from 'electron';
 import keytar from 'keytar';
 import { config } from 'dotenv';
@@ -53,6 +54,7 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -62,11 +64,10 @@ async function createWindow() {
 
   if ((isPackaged || isProd) && process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
-    mainWindow.webContents.openDevTools();
   }
+  // mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
@@ -93,6 +94,7 @@ function startGithubOAuth() {
   const oauthWindow = new BrowserWindow({
     width: 500,
     height: 600,
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
