@@ -17,3 +17,5 @@ OAuth 2.0 config is via `.env.production` and `.env.development`:
     ACCOUNT_NAME=github-token
 
 See [GitHub OAuth Apps](https://github.com/settings/developers).
+
+There is a sample test -- since GitHub uses 2FA, it will only take you so far if running with session sandboxing (as it is atm).

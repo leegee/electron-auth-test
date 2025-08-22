@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 import { config } from 'dotenv';
 
@@ -87,7 +87,7 @@ async function createWindow() {
     }
   }
 
-  // mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
@@ -110,17 +110,25 @@ app.whenReady().then(() => {
 });
 
 function startGithubOAuth() {
+  const ses = session.fromPartition('persist:oauthWindow', { cache: false });
+
   const oauthWindow = new BrowserWindow({
     width: 500,
     height: 600,
     alwaysOnTop: true,
     focusable: true,
     webPreferences: {
+      sandbox: true,
       backgroundThrottling: false,
       contextIsolation: true,
       devTools: false,
       nodeIntegration: false,
+      session: ses,
     }
+  });
+
+  oauthWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('https://github.com')) event.preventDefault();
   });
 
   oauthWindow.setMenu(null);

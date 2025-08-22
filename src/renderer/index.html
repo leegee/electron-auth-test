@@ -1,8 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-  <link rel="stylesheet" href="index.css" />
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self';
+    connect-src https://github.com https://api.github.com;
+    frame-src https://github.com;
+    form-action https://github.com;
+    base-uri 'self';
+  ">
+  <title>Electron GitHub OAuth</title>
+  <link rel="stylesheet" href="./index.css">
 </head>
 
 <body>
@@ -10,17 +22,8 @@
   <button id="login">Login with GitHub</button>
   <p id="status"></p>
 
-  <script>
-    const loginBtn = document.getElementById('login');
-    const status = document.getElementById('status');
+  <script type="module" src="./index.ts"></script>
 
-    loginBtn.addEventListener('click', () => {
-      loginBtn.setAttribute('disabled', true);
-      window.electronAPI.loginGitHub();
-    });
+</body>
 
-    window.electronAPI.onOAuthSuccess(() => {
-      status.innerText = "Logged in with GitHub";
-      loginBtn.setAttribute('style', 'display:none')
-    });
-  </script>
+</html>

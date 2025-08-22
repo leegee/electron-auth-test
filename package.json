@@ -4,16 +4,18 @@
   "type": "module",
   "main": "dist/src/main.js",
   "scripts": {
-    "bundle": "bun run build:prod && electron-builder",
-    "bundle:test": "cross-env NODE_ENV=production bun run build:prod && electron-builder --dir",
-    "build:dev": "cross-env NODE_ENV=development tsc && vite build",
-    "build:prod": "cross-env NODE_ENV=production tsc && vite build && cp src/preload.cjs dist/preload.cjs",
-    "build": "bun run build:prod",
-    "preview": "./dist_electron/win-unpacked/MyApp.exe",
+    "build:main": "tsc && cp src/preload.cjs dist/preload.cjs",
+    "build:renderer": "vite build",
+    "build:prod": "cross-env NODE_ENV=production npm run build:main && npm run build:renderer",
+    "build:dev": "cross-env NODE_ENV=development tsc",
+    "bundle": "npm run build:prod && electron-builder",
+    "bundle:test": "npm run build:prod && electron-builder --dir",
     "start": "cross-env NODE_ENV=production electron .",
+    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\"",
+    "preview": "./dist_electron/win-unpacked/MyApp.exe",
+    "ls": "bunx asar list dist_electron/win-unpacked/resources/app.asar",
     "vite": "vite",
-    "test": "bunx playwright test",
-    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\""
+    "test": "bunx playwright test"
   },
   "keywords": [],
   "author": "",
@@ -46,10 +48,12 @@
     },
     "files": [
       ".env.production",
-      "dist/**/*",
-      "package.json",
-      "renderer/**/*"
+      "dist/src/main.js",
+      "dist/preload.cjs",
+      "dist/renderer/**/*",
+      "package.json"
     ],
+    "asar": true,
     "protocols": [
       {
         "name": "MyApp Protocol",
