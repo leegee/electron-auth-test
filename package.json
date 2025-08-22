@@ -2,14 +2,17 @@
   "name": "electron-auth-test",
   "version": "1.0.0",
   "type": "module",
-  "main": "dist/main.js",
+  "main": "dist/src/main.js",
   "scripts": {
-    "bundle": "cross-env NODE_ENV=production tsc && vite build && electron-builder",
+    "bundle": "bun run build:prod && electron-builder",
+    "bundle:test": "cross-env NODE_ENV=production bun run build:prod && electron-builder --dir",
     "build:dev": "cross-env NODE_ENV=development tsc && vite build",
     "build:prod": "cross-env NODE_ENV=production tsc && vite build && cp src/preload.cjs dist/preload.cjs",
-    "build": "npm run build:prod",
+    "build": "bun run build:prod",
+    "preview": "./dist_electron/win-unpacked/MyApp.exe",
     "start": "cross-env NODE_ENV=production electron .",
     "vite": "vite",
+    "test": "bunx playwright test",
     "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\""
   },
   "keywords": [],
@@ -17,6 +20,7 @@
   "license": "ISC",
   "description": "Testing Electron/OAuth/keytar against GitHub",
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/electron": "^1.4.38",
     "@types/express": "^5.0.3",
     "@types/node": "^24.3.0",
