@@ -7,12 +7,14 @@ config({ path: path.resolve(process.cwd(), '.env.production') });
 const GITHUB_USER = process.env.GITHUB_USER!;
 const GITHUB_PASS = process.env.GITHUB_PASS!;
 const REDIRECT_URI = process.env.REDIRECT_URI || 'myapp://callback';
-const prodMain = path.resolve('./dist/src/main.js');
+
+const prodExe = path.resolve('./dist_electron/win-unpacked/MyApp.exe'); // Windows
+// const prodExe = path.resolve('./dist_electron/mac/MyApp.app/Contents/MacOS/MyApp'); // macOS
+// const prodExe = path.resolve('./dist_electron/linux-unpacked/MyApp'); // Linux
 
 test('Launch Electron production build', async () => {
-    // Launch Electron production build
     const electronApp = await _electron.launch({
-        args: [prodMain],
+        executablePath: prodExe,
         colorScheme: 'dark'
     });
 
