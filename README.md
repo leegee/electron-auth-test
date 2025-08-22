@@ -16,3 +16,5 @@ OAuth 2.0 config is via `.env.production` and `.env.development`:
     CLIENT_SECRET=xxxxxxxxxxxxxxxxx
     SERVICE_NAME=electron-github-oauth
     ACCOUNT_NAME=github-token
+
+See [GitHub OAuth Apps](https://github.com/settings/developers).
