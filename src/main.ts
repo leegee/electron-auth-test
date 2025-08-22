@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
@@ -16,8 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const isPackaged = app.isPackaged;
-const isProd = process.env.NODE_ENV === 'production';
-const envFile = isPackaged || isProd
+const envFile = isPackaged
   ? '.env.production'
   : '.env.development';
 
@@ -31,7 +31,7 @@ const ACCOUNT_NAME = getEnv('ACCOUNT_NAME');
 const DEV_REDIRECT_URI = 'http://localhost:3000/callback';
 const PROD_REDIRECT_URI = 'myapp://callback';
 
-const REDIRECT_URI = isPackaged || isProd ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
+const REDIRECT_URI = isPackaged ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
 
 let mainWindow: BrowserWindow;
 
@@ -51,23 +51,43 @@ if (!gotLock) {
 }
 
 async function createWindow() {
+  const preloadPath = isPackaged
+    ? path.join(app.getAppPath(), 'dist', 'preload.cjs')
+    : path.join(__dirname, '../dist/preload.cjs');
+
+  console.log('preload.cjs file  path:', preloadPath);
+
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    autoHideMenuBar: true,
+    show: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      preload: preloadPath,
     }
   });
 
-  if ((isPackaged || isProd) && process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+  mainWindow.setMenu(null);
+
+  // Who knows why prod needs this?
+  mainWindow.once('ready-to-show', () => mainWindow.show());
+
+  if (isPackaged) {
+    const rendererPath = path.join(app.getAppPath(), 'dist', 'renderer', 'index.html');
+    mainWindow.loadFile(rendererPath)
+      .catch((err) => console.error('Failed to load renderer:', err));
   }
-  // mainWindow.webContents.openDevTools();
+
+  else {
+    if (process.env.VITE_DEV_SERVER_URL) {
+      mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+    } else {
+      throw new Error('process.env.VITE_DEV_SERVER_URL not set!');
+    }
+  }
+
+  mainWindow.webContents.openDevTools();
 
   return mainWindow;
 }
@@ -78,7 +98,6 @@ app.whenReady().then(() => {
   createWindow();
 
   console.log('NODE_ENV = ', process.env.NODE_ENV);
-  console.log('isProd = ', isProd);
   console.log('isPackaged = ', isPackaged);
 
   if (!isPackaged) {
@@ -94,12 +113,15 @@ function startGithubOAuth() {
   const oauthWindow = new BrowserWindow({
     width: 500,
     height: 600,
-    autoHideMenuBar: true,
     webPreferences: {
+      backgroundThrottling: false,
+      contextIsolation: true,
+      devTools: false,
       nodeIntegration: false,
-      contextIsolation: true
     }
   });
+
+  oauthWindow.setMenu(null);
 
   const authUrl = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=read:user`;
   oauthWindow.loadURL(authUrl);
