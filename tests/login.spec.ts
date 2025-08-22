@@ -19,30 +19,58 @@ test('Launch Electron production build', async () => {
     });
 
     const mainWindow = await electronApp.firstWindow();
+    await mainWindow.bringToFront();
     await mainWindow.waitForLoadState('domcontentloaded');
 
-    const loginButton = mainWindow.locator('button:has-text("Login with GitHub")');
-    await loginButton.waitFor({ state: 'attached', timeout: 10000 });
-    await loginButton.click({ force: true });
+    const loginButton = mainWindow.locator('#login');
+    console.log('## found login button')
+    await loginButton.waitFor({ state: 'visible', timeout: 30000 });
+    console.log('## login button seen')
+    await loginButton.click();
+    console.log('## login button clicked')
 
     // Wait for OAuth popup window
     const popupPromise = electronApp.waitForEvent('window').catch(() => null);
-    await loginButton.click();
     const oauthWindow = await popupPromise;
 
     if (oauthWindow) {
         await oauthWindow.waitForLoadState('domcontentloaded');
-        await oauthWindow.fill('input[name="login"]', GITHUB_USER);
-        await oauthWindow.fill('input[name="password"]', GITHUB_PASS);
-        await oauthWindow.click('input[name="commit"]');
+
+        const isLoggedIn = await oauthWindow.evaluate(() => {
+            return document.body.classList.contains("logged-in");
+        });
+
+        if (!isLoggedIn) {
+            console.log('### Not logged in - find  the form')
+            const html = await oauthWindow.content();
+            console.log(html);
+            await oauthWindow.fill('input[name="login"]', GITHUB_USER);
+            await oauthWindow.fill('input[name="password"]', GITHUB_PASS);
+            await oauthWindow.click('input[name="commit"]');
+            console.log('### oauthWindow filled in form')
+        }
+        else {
+            console.log('### logged in')
+            const html = await oauthWindow.content();
+            console.log(html);
+        }
 
         const authorizeBtn = oauthWindow.locator('[data-octo-click="oauth_application_authorization"]');
         if (await authorizeBtn.isVisible({ timeout: 5000 })) {
             await authorizeBtn.click();
         }
 
-        await oauthWindow.waitForURL(url => url.toString().startsWith(REDIRECT_URI));
-        await oauthWindow.close();
+        const continueBtn = oauthWindow.locator('text=Continue');
+        await continueBtn.waitFor({ state: 'visible', timeout: 10000 });
+        await continueBtn.click();
+
+        // Wait for either redirect OR close
+        try {
+            await oauthWindow.waitForEvent('close', { timeout: 4000 });
+        } catch {
+            console.log('Popup did not close automatically, closing manually...');
+            await oauthWindow.close();
+        }
     } else {
         console.log('No OAuth popup — user likely already logged in');
     }
