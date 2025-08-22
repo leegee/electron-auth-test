@@ -51,8 +51,6 @@ test('Launch Electron production build', async () => {
         }
         else {
             console.log('### logged in')
-            const html = await oauthWindow.content();
-            console.log(html);
         }
 
         const authorizeBtn = oauthWindow.locator('[data-octo-click="oauth_application_authorization"]');
