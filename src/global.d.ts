@@ -7,5 +7,3 @@ interface Window {
         getPassword: (service: string, account: string) => Promise<string | null>;
     };
 }
-
-

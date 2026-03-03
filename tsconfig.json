@@ -8,12 +8,11 @@
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "types": ["./src/global.d.ts"]
+        "forceConsistentCasingInFileNames": true
     },
     "exclude": [
         "playwright.config.ts",
-        "src/renderer/**/*",
+        // "src/renderer/**/*",
         "tests",
         "vite.config.ts"
     ]
