@@ -1,6 +1,8 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { createServer } from 'node:http';
+import packageJson from '../package.json';
 
 import { app, BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
@@ -30,7 +32,7 @@ const ACCOUNT_NAME = getEnv('ACCOUNT_NAME');
 const SHOW_DEV_TOOLS = getEnv('SHOW_DEV_TOOLS');
 
 const DEV_REDIRECT_URI = 'http://localhost:3000/callback';
-const PROD_REDIRECT_URI = 'myapp://callback';
+const PROD_REDIRECT_URI = packageJson.build.protocols[0].schemes + '://callback';
 
 const REDIRECT_URI = isPackaged ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
 
@@ -234,12 +236,21 @@ function getEnv(name: string): string {
   return value;
 }
 
+// osx
 app.on('open-url', async (event, url) => {
   event.preventDefault();
-  if (!url.startsWith(PROD_REDIRECT_URI)) return;
+  if (!url.startsWith(PROD_REDIRECT_URI)) {
+    console.log('Denied an attempt to open', url);
+    return;
+  }
 
   const code = new URL(url).searchParams.get('code');
-  if (code) await exchangeCodeForToken(code);
+  if (code) {
+    console.log('Got code from URL');
+    await exchangeCodeForToken(code);
+  } else {
+    console.log('No code in URL');
+  }
 });
 
 ipcMain.handle('keytar-set-password', async (_event, service: string, account: string, password: string) => {
