@@ -22,6 +22,7 @@ const envFile = isPackaged
 
 config({ path: path.resolve(process.cwd(), envFile) });
 
+const CACHE_USER_SESSIONS = ['true', '1'].includes((getEnv('CACHE_USER_SESSIONS') ?? '').toLowerCase());;
 const CLIENT_ID = getEnv('CLIENT_ID');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET');
 const SERVICE_NAME = getEnv('SERVICE_NAME');
@@ -119,7 +120,7 @@ app.whenReady().then(() => {
 });
 
 function startGithubOAuth() {
-  const ses = session.fromPartition('persist:oauthWindow', { cache: false });
+  const ses = session.fromPartition('persist:oauthWindow', { cache: CACHE_USER_SESSIONS });
 
   const oauthWindow = new BrowserWindow({
     width: 500,
