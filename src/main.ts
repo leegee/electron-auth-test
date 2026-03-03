@@ -27,6 +27,7 @@ const CLIENT_ID = getEnv('CLIENT_ID');
 const CLIENT_SECRET = getEnv('CLIENT_SECRET');
 const SERVICE_NAME = getEnv('SERVICE_NAME');
 const ACCOUNT_NAME = getEnv('ACCOUNT_NAME');
+const SHOW_DEV_TOOLS = getEnv('SHOW_DEV_TOOLS');
 
 const DEV_REDIRECT_URI = 'http://localhost:3000/callback';
 const PROD_REDIRECT_URI = 'myapp://callback';
@@ -34,6 +35,7 @@ const PROD_REDIRECT_URI = 'myapp://callback';
 const REDIRECT_URI = isPackaged ? PROD_REDIRECT_URI : DEV_REDIRECT_URI;
 
 let mainWindow: BrowserWindow;
+let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -50,10 +52,12 @@ if (!gotLock) {
   });
 }
 
+
 async function createWindow() {
+  // Because life has to be difficult:
   const preloadPath = isPackaged
-    ? path.join(app.getAppPath(), 'dist', 'preload.cjs')
-    : path.join(__dirname, '../dist/preload.cjs');
+    ? path.join(app.getAppPath(), 'dist/preload.cjs')      // prod
+    : path.join(__dirname, '../src/preload.cjs');         // dev
 
   console.log('preload.cjs file  path:', preloadPath);
 
@@ -67,6 +71,10 @@ async function createWindow() {
       preload: preloadPath,
     }
   });
+
+  if (SHOW_DEV_TOOLS) {
+    mainWindow.webContents.openDevTools();
+  }
 
   mainWindow.setMenu(null);
 
@@ -87,8 +95,6 @@ async function createWindow() {
     }
   }
 
-  // mainWindow.webContents.openDevTools();
-
   return mainWindow;
 }
 
@@ -101,17 +107,22 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  if (devServer) {
+    devServer.close();
+    devServer = null;
+    console.log('Closed HTTP server');
+  }
   console.log('App quitting...');
 });
 
 app.whenReady().then(() => {
-  createWindow();
-
   console.log('NODE_ENV = ', process.env.NODE_ENV);
   console.log('isPackaged = ', isPackaged);
 
+  createWindow();
+
   if (!isPackaged) {
-    startDevHttpServer();
+    devServer = startDevHttpServer();
   } else {
     if (!app.isDefaultProtocolClient('myapp')) {
       app.setAsDefaultProtocolClient('myapp');
@@ -188,6 +199,7 @@ async function exchangeCodeForToken(code: string) {
   }
 }
 
+// Returns a running HTTP server
 function startDevHttpServer() {
   const server = createServer(async (req, res) => {
     if (!req.url) return;
@@ -212,6 +224,8 @@ function startDevHttpServer() {
   server.listen(3000, () => {
     console.log(`Dev HTTP server running on ${DEV_REDIRECT_URI}`);
   });
+
+  return server;
 }
 
 function getEnv(name: string): string {
@@ -226,4 +240,12 @@ app.on('open-url', async (event, url) => {
 
   const code = new URL(url).searchParams.get('code');
   if (code) await exchangeCodeForToken(code);
+});
+
+ipcMain.handle('keytar-set-password', async (_event, service: string, account: string, password: string) => {
+  return keytar.setPassword(service, account, password);
+});
+
+ipcMain.handle('keytar-get-password', async (_event, service: string, account: string) => {
+  return keytar.getPassword(service, account);
 });
