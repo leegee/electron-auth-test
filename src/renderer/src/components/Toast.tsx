@@ -1,4 +1,4 @@
-import { createSignal, Show } from 'solid-js'
+import { createSignal, Show, type JSX } from 'solid-js'
 
 import './Toast.css'
 
@@ -6,7 +6,7 @@ type ToastType = 'success' | 'error' | 'info'
 
 let showToastFn: (msg: string, type?: ToastType, duration?: number) => void
 
-export function ToastRoot() {
+export function ToastRoot(): JSX.Element {
     const [message, setMessage] = createSignal('')
     const [type, setType] = createSignal<ToastType>('info')
 
@@ -20,16 +20,7 @@ export function ToastRoot() {
 
     return (
         <Show when={message()}>
-            <div
-                class={`snackbar ${type()}`}
-                style={{
-                    position: 'fixed',
-                    top: '1rem',
-                    left: '1rem',
-                    "z-index": 9999,
-                    "min-width": '150pt',
-                }}
-            >
+            <div class={`snackbar ${type()}`}>
                 {message()}
             </div>
         </Show>

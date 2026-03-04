@@ -1,37 +1,22 @@
-// src/App.tsx
-import { Show } from 'solid-js'
+import { type JSX, Show } from 'solid-js'
 import MainApp from './components/MainApp'
 import AuthPanel from './components/AuthPanel'
 import { ToastRoot } from './components/Toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 
-function AppContent() {
-  const auth = useAuth()
-
+export default function App(): JSX.Element {
   return (
-    <>
+    <AuthProvider>
+      <ToastRoot />
       <nav class="top">
-        <Show when={auth.authorised()} fallback={<AuthPanel />}>
-          <button onClick={auth.logout}>
-            <i>logout</i> Log out
-          </button>
-        </Show>
+        <AuthPanel />
       </nav>
 
       <main class="responsive">
-        <ToastRoot />
-        <Show when={auth.authorised()}>
+        <Show when={useAuth().authorised()}>
           <MainApp />
         </Show>
       </main>
-    </>
-  )
-}
-
-export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
     </AuthProvider>
   )
 }

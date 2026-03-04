@@ -1,12 +1,11 @@
-// src/contexts/AuthContext.ts
-import { createContext, useContext, createSignal, onMount } from 'solid-js'
+import { createContext, useContext, createSignal, onMount, type JSX } from 'solid-js'
 import { api } from '@renderer/bridge'
 
 import { showToast } from '../components/Toast'
 
 const AuthContext = createContext<any>()
 
-export function AuthProvider(props) {
+export function AuthProvider(props): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false)
     const [loading, setLoading] = createSignal(false)
 
