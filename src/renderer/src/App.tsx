@@ -1,8 +1,9 @@
-import { type JSX, Show } from 'solid-js'
+import { type JSX, Match, Switch } from 'solid-js'
 import LoggedIn from './components/LoggedIn'
 import AuthPanel from './components/AuthPanel'
 import { ToastRoot } from './components/Toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import NotLoggedIn from './components/NotLoggedIn'
 
 export default function App(): JSX.Element {
   return (
@@ -13,9 +14,14 @@ export default function App(): JSX.Element {
       </nav>
 
       <main class="responsive">
-        <Show when={useAuth().authorised()}>
-          <LoggedIn />
-        </Show>
+        <Switch>
+          <Match when={useAuth().authorised()}>
+            <LoggedIn />
+          </Match>
+          <Match when={!useAuth().authorised()}>
+            <NotLoggedIn />
+          </Match>
+        </Switch>
       </main>
     </AuthProvider>
   )
