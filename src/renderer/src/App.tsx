@@ -1,5 +1,5 @@
 import { type JSX, Show } from 'solid-js'
-import MainApp from './components/MainApp'
+import LoggedIn from './components/LoggedIn'
 import AuthPanel from './components/AuthPanel'
 import { ToastRoot } from './components/Toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -14,7 +14,7 @@ export default function App(): JSX.Element {
 
       <main class="responsive">
         <Show when={useAuth().authorised()}>
-          <MainApp />
+          <LoggedIn />
         </Show>
       </main>
     </AuthProvider>
