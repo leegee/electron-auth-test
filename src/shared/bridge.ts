@@ -1,3 +1,7 @@
+export interface RendererConfig {
+    CUSTOM_URL_PROTOCOL: string
+}
+
 export interface ApiBridge {
     loginGitHub: () => void
 
@@ -18,4 +22,7 @@ export interface ApiBridge {
     //     account: string,
     //     password: string
     // ) => Promise<void>
+
+    config: RendererConfig
 }
+
