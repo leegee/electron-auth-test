@@ -1,72 +1,114 @@
 {
-  "name": "electron-auth-test",
-  "version": "0.0.2",
-  "type": "module",
-  "main": "dist/src/main/index.js",
+  "name": "electron-secure-test",
+  "version": "1.0.0",
+  "description": "An Electron application with Solid and TypeScript",
+  "main": "./out/main/index.js",
+  "author": "example.com",
+  "homepage": "https://electron-vite.org",
   "scripts": {
-    "build:main": "tsc && cp src/preload.cjs dist/preload.cjs",
-    "build:renderer": "vite build",
-    "build:prod": "cross-env NODE_ENV=production npm run build:main && npm run build:renderer",
-    "build:dev": "cross-env NODE_ENV=development tsc",
-    "bundle": "npm run build:prod && electron-builder",
-    "bundle:test": "npm run build:prod && electron-builder --dir",
-    "start": "cross-env NODE_ENV=production electron .",
-    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main/index.ts\"",
-    "ls": "bunx asar list dist_electron/win-unpacked/resources/app.asar",
-    "vite": "vite",
-    "test": "bunx playwright test"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "Testing Electron/OAuth/keytar against GitHub",
-  "devDependencies": {
-    "@playwright/test": "^1.55.0",
-    "@types/electron": "^1.4.38",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.3.0",
-    "concurrently": "^9.2.0",
-    "cross-env": "^10.0.0",
-    "electron": "^37.3.1",
-    "electron-builder": "^26.0.12",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2",
-    "vite": "^6.3.5"
+    "format": "prettier --write .",
+    "lint": "eslint --cache .",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "start": "electron-vite preview",
+    "dev": "electron-vite dev",
+    "build": "npm run typecheck && electron-vite build",
+    "postinstall": "electron-builder install-app-deps",
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
-    "dotenv": "^17.2.1",
+    "@electron-toolkit/preload": "^3.0.2",
+    "@electron-toolkit/utils": "^4.0.0",
+    "beercss": "^4.0.16",
+    "electron-updater": "^6.3.9",
     "keytar": "^7.9.0"
   },
+  "devDependencies": {
+    "@electron-toolkit/eslint-config-prettier": "^3.0.0",
+    "@electron-toolkit/eslint-config-ts": "^3.1.0",
+    "@electron-toolkit/tsconfig": "^2.0.0",
+    "@types/node": "^22.19.1",
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^5.0.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-solid": "^0.14.5",
+    "prettier": "^3.7.4",
+    "solid-js": "^1.9.10",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vite-plugin-solid": "^2.11.10"
+  },
   "build": {
-    "appId": "com.example.myapp",
-    "productName": "MyApp",
+    "appId": "com.electron.app",
+    "productName": "electron-secure-test",
     "directories": {
-      "buildResources": "assets",
-      "output": "dist_electron"
+      "buildResources": "build"
     },
     "files": [
-      ".env.production",
-      "dist/src/main/index.js",
-      "dist/preload.cjs",
-      "dist/renderer/**/*",
-      "package.json"
+      "!**/.vscode/*",
+      "!src/*",
+      "!electron.vite.config.{js,ts,mjs,cjs}",
+      "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}",
+      "!{.env,.env.*,.npmrc,pnpm-lock.yaml}",
+      "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
     ],
-    "asar": true,
+    "asarUnpack": [
+      "resources/**"
+    ],
+    "win": {
+      "executableName": "electron-secure-test"
+    },
+    "nsis": {
+      "artifactName": "${name}-${version}-setup.${ext}",
+      "shortcutName": "${productName}",
+      "uninstallDisplayName": "${productName}",
+      "createDesktopShortcut": "always"
+    },
+    "mac": {
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSCameraUsageDescription": "Application requests access to the device's camera.",
+        "NSMicrophoneUsageDescription": "Application requests access to the device's microphone.",
+        "NSDocumentsFolderUsageDescription": "Application requests access to the user's Documents folder.",
+        "NSDownloadsFolderUsageDescription": "Application requests access to the user's Downloads folder."
+      },
+      "notarize": false
+    },
+    "dmg": {
+      "artifactName": "${name}-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "snap",
+        "deb"
+      ],
+      "maintainer": "electronjs.org",
+      "category": "Utility"
+    },
+    "appImage": {
+      "artifactName": "${name}-${version}.${ext}"
+    },
+    "npmRebuild": false,
+    "publish": {
+      "provider": "generic",
+      "url": "https://example.com/auto-updates"
+    },
+    "electronDownload": {
+      "mirror": "https://npmmirror.com/mirrors/electron/"
+    },
     "protocols": [
       {
-        "name": "MyApp Protocol",
+        "name": "MyApp Test Protocol",
         "schemes": [
           "myapp"
         ]
       }
-    ],
-    "win": {
-      "target": [
-        "nsis"
-      ]
-    },
-    "mac": {
-      "category": "public.app-category.utilities"
-    }
+    ]
   }
 }

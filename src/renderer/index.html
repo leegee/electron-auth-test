@@ -1,32 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'none';
-    script-src 'self';
-    style-src 'self';
-    img-src 'self';
-    connect-src https://github.com https://api.github.com;
-    frame-src https://github.com;
-    form-action https://github.com;
-    base-uri 'self';
-  ">
-  <title>Electron GitHub OAuth</title>
-  <link rel="stylesheet" href="./index.css">
+  <meta charset="UTF-8" />
+  <title>Electron GitHub OAuth2 Demo</title>
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:" />
 </head>
 
 <body>
-  <h1>Electron GitHub OAuth</h1>
-  <button id="login">Login with GitHub</button>
-  <p id="status"></p>
-
-  <button id="set">Set Secret</button>
-  <button id="get">Get Secret</button>
-
-  <script type="module" src="./index.ts"></script>
-
+  <div id="root"></div>
+  <script type="module" src="src/main.tsx"></script>
 </body>
 
 </html>

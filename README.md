@@ -1,21 +1,34 @@
-# `electron-auth-test`
+# electron-secure-test
 
-An small example of Electron authorising via OAuth 2.0 and storing locally using `keytar`.
+An Electron application with Solid and TypeScript
+
+## Recommended IDE Setup
+
+- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+
+## Project Setup
+
+### Install
 
 ```bash
-bun dev
-# Or
-bun run bundle
+$ npm install
 ```
 
-In prod mode, uses a [custom protocol handler](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/registerProtocolHandler) to receive redirects. This behaves differently on a Mac to Windoze, and I only have the latter to hand.
+### Development
 
-In dev mode, uses Node's `http` module to receive redirects from GitHub since custom protocols do not reliably work in dev mode.
+```bash
+$ npm run dev
+```
 
-OAuth 2.0 config is via `.env.production` and `.env.development` - see [.env.eg.txt](./.env.eg.txt) for details.
+### Build
 
-## References
+```bash
+# For windows
+$ npm run build:win
 
-See [GitHub OAuth Apps](https://github.com/settings/developers).
+# For macOS
+$ npm run build:mac
 
-
+# For Linux
+$ npm run build:linux
+```

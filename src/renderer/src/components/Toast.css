@@ -1,0 +1,48 @@
+.snackbar {
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 0.5rem;
+    opacity: 0.95;
+    min-width: 200px;
+    max-width: 300px;
+    word-break: break-word;
+    z-index: 9999;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.success {
+    background-color: #4caf50;
+}
+
+.error {
+    background-color: #f44336;
+}
+
+.info {
+    background-color: blue;
+}
+
+.snackbar-enter {
+    transform: translateY(-20px);
+    opacity: 0;
+}
+
+.snackbar-enter-active {
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.snackbar-exit {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.snackbar-exit-active {
+    transform: translateY(-20px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}

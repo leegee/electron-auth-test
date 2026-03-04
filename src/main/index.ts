@@ -1,38 +1,79 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { createServer } from 'node:http';
+import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
+import path from 'path'
+import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import icon from '../../resources/icon.png?asset'
 
-import { app, BrowserWindow, protocol } from 'electron';
+import { config } from './config';
+import { exchangeCodeForToken, initIpc } from './ipc-bridge';
+import { startDevHttpServer } from './httpServer';
 
-import { exchangeCodeForToken, init } from './ipc-bridge.ts';
-import { config } from './config.ts';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-let mainWindow: BrowserWindow;
 let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 
-const gotLock = app.requestSingleInstanceLock();
-if (!gotLock) {
-  app.quit();
-} else {
-  app.on('second-instance', async (_event, argv) => {
-    const urlArg = argv.find(a => a.startsWith(`${config.CUSTOM_URL_PROTOCOL}://`));
-    if (urlArg) {
-      const code = new URL(urlArg).searchParams.get('code');
-      if (code) await exchangeCodeForToken(mainWindow, code);
-      mainWindow?.focus();
+function createWindow(): void {
+  // Create the browser window.
+  const mainWindow = new BrowserWindow({
+    width: 900,
+    height: 670,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      sandbox: false
     }
-  });
+  })
+
+  if (!config.isPackaged && !devServer) {
+    devServer = startDevHttpServer(mainWindow);
+  }
+
+  const gotLock = app.requestSingleInstanceLock();
+  if (!gotLock) {
+    app.quit();
+  } else {
+    app.on('second-instance', async (_event, argv) => {
+      const urlArg = argv.find(a => a.startsWith(`${config.CUSTOM_URL_PROTOCOL}://`));
+      if (urlArg) {
+        const code = new URL(urlArg).searchParams.get('code');
+        if (code) await exchangeCodeForToken(mainWindow, code);
+        mainWindow?.focus();
+      }
+    });
+  }
+
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show()
+  })
+
+  initIpc(mainWindow);
+
+  if (config.SHOW_DEV_TOOLS) {
+    mainWindow.webContents.openDevTools();
+  }
+
+  mainWindow.setMenu(null);
+
+  // xxx
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  // HMR for renderer base on electron-vite cli.
+  // Load the remote URL for development or the local html file for production.
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
+  }
 }
+
 
 protocol.registerSchemesAsPrivileged([
   { scheme: config.CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } }
 ]);
 
 
-app.on('window-all-closed', app.quit);
 
 app.on('before-quit', () => {
   console.log('App quitting...');
@@ -43,9 +84,13 @@ app.on('before-quit', () => {
   }
 });
 
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  console.log('NODE_ENV = ', process.env.NODE_ENV);
-  console.log('isPackaged = ', config.isPackaged);
+  // Set app user model id for windows
+  electronApp.setAppUserModelId('com.electron')
 
   if (config.isPackaged) {
     try {
@@ -70,93 +115,33 @@ app.whenReady().then(() => {
     console.error(`Failed to register "${config.CUSTOM_URL_PROTOCOL}" protocol`, err);
   }
 
-  const preloadPath = config.isPackaged
-    ? path.join(app.getAppPath(), 'dist/preload.cjs')     // prod
-    : path.join(__dirname, '../preload.cjs');         // dev
+  // Default open or close DevTools by F12 in development
+  // and ignore CommandOrControl + R in production.
+  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
+  app.on('browser-window-created', (_, window) => {
+    optimizer.watchWindowShortcuts(window)
+  })
 
-  console.log('preload.cjs file  path:', preloadPath);
+  // IPC test
+  ipcMain.on('ping', () => console.log('pong'))
 
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    show: true,
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: preloadPath,
-    }
-  });
+  createWindow()
 
-  init(mainWindow);
+  app.on('activate', function () {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
 
-  if (config.SHOW_DEV_TOOLS) {
-    mainWindow.webContents.openDevTools();
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
   }
+})
 
-  mainWindow.setMenu(null);
-  mainWindow.once('ready-to-show', () => mainWindow.show());
-
-  if (config.isPackaged) {
-    const rendererPath = path.resolve(app.getAppPath(), 'dist', 'renderer', 'index.html');
-    mainWindow.loadFile(rendererPath)
-      .catch((err) => console.error('Failed to load renderer:', err));
-  } else {
-    if (process.env.VITE_DEV_SERVER_URL) {
-      mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    } else {
-      throw new Error('process.env.VITE_DEV_SERVER_URL not set!');
-    }
-  }
-
-  if (!config.isPackaged) {
-    devServer = startDevHttpServer();
-  }
-});
-
-
-
-export function startDevHttpServer() {
-  const server = createServer(async (req, res) => {
-    if (!req.url) return;
-    const reqUrl = new URL(req.url, config.DEV_REDIRECT_URI);
-
-    if (reqUrl.pathname === '/callback') {
-      const code = reqUrl.searchParams.get('code');
-      if (code) {
-        await exchangeCodeForToken(mainWindow, code);
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('Login successful! You can close this window.');
-      } else {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('No code received');
-      }
-    } else {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Not found');
-    }
-  });
-
-  server.listen(3000, () => {
-    console.log(`Dev HTTP server running on ${config.DEV_REDIRECT_URI}`);
-  });
-
-  return server;
-}
-
-// macOS custom protocol
-app.on('open-url', async (event, url) => {
-  event.preventDefault();
-  if (!url.startsWith(config.PROD_REDIRECT_URI)) {
-    console.log('Denied an attempt to open', url);
-    return;
-  }
-
-  const code = new URL(url).searchParams.get('code');
-  if (code) {
-    console.log('Got code from URL');
-    await exchangeCodeForToken(mainWindow, code);
-  } else {
-    console.log('No code in URL');
-  }
-});
-
+// In this file you can include the rest of your app's specific main process
+// code. You can also put them in separate files and require them here.

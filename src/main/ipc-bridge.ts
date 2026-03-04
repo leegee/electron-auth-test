@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
-import { config } from './config.ts';
+import { config } from './config';
 
 interface GitHubTokenResponse {
     access_token: string;
@@ -9,17 +9,18 @@ interface GitHubTokenResponse {
     token_type?: string;
 }
 
-export function init(mainWindow: BrowserWindow) {
-    ipcMain.on('login-github', () => startGithubOAuth(mainWindow));
-}
-
-ipcMain.handle('keytar-set-password', async (_event, service: string, account: string, password: string) => {
-    return keytar.setPassword(service, account, password);
-});
-
 ipcMain.handle('keytar-get-password', async (_event, service: string, account: string) => {
     return keytar.getPassword(service, account);
 });
+
+// ipcMain.handle('keytar-set-password', async (_event, service: string, account: string, password: string) => {
+//     return keytar.setPassword(service, account, password);
+// });
+
+export function initIpc(mainWindow: BrowserWindow) {
+    ipcMain.on('login-github', () => startGithubOAuth(mainWindow));
+    ipcMain.on('delete-password', () => keytar.deletePassword(config.SERVICE_NAME, config.ACCOUNT_NAME));
+}
 
 function startGithubOAuth(mainWindow: BrowserWindow) {
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.CACHE_USER_SESSIONS });
@@ -79,7 +80,11 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
         const accessToken = tokenData.access_token;
 
         if (accessToken) {
-            await keytar.setPassword(config.SERVICE_NAME, config.ACCOUNT_NAME, accessToken);
+            await keytar.setPassword(
+                config.SERVICE_NAME,
+                config.ACCOUNT_NAME,
+                accessToken
+            );
             console.log("Token stored securely in keytar.");
             mainWindow?.webContents.send('oauth-success');
         } else {

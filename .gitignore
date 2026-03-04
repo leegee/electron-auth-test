@@ -1,8 +1,6 @@
 node_modules
-.env
-.env.development
-.env.production
 dist
-dist-package
-dist_electron
-test-results
+out
+.DS_Store
+.eslintcache
+*.log*
