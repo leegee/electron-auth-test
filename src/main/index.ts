@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 
 import { app, BrowserWindow, protocol } from 'electron';
 
-import { exchangeCodeForToken, init } from './main/ipc-bridge.ts';
-import { config } from './main/config.ts';
+import { exchangeCodeForToken, init } from './ipc-bridge.ts';
+import { config } from './config.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,7 +72,7 @@ app.whenReady().then(() => {
 
   const preloadPath = config.isPackaged
     ? path.join(app.getAppPath(), 'dist/preload.cjs')     // prod
-    : path.join(__dirname, '../src/preload.cjs');         // dev
+    : path.join(__dirname, '../preload.cjs');         // dev
 
   console.log('preload.cjs file  path:', preloadPath);
 

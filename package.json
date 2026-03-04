@@ -2,7 +2,7 @@
   "name": "electron-auth-test",
   "version": "0.0.2",
   "type": "module",
-  "main": "dist/src/main.js",
+  "main": "dist/src/main/index.js",
   "scripts": {
     "build:main": "tsc && cp src/preload.cjs dist/preload.cjs",
     "build:renderer": "vite build",
@@ -11,7 +11,7 @@
     "bundle": "npm run build:prod && electron-builder",
     "bundle:test": "npm run build:prod && electron-builder --dir",
     "start": "cross-env NODE_ENV=production electron .",
-    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\"",
+    "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main/index.ts\"",
     "ls": "bunx asar list dist_electron/win-unpacked/resources/app.asar",
     "vite": "vite",
     "test": "bunx playwright test"
@@ -46,7 +46,7 @@
     },
     "files": [
       ".env.production",
-      "dist/src/main.js",
+      "dist/src/main/index.js",
       "dist/preload.cjs",
       "dist/renderer/**/*",
       "package.json"
