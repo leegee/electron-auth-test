@@ -1,12 +1,11 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 
-import { app, BrowserWindow, ipcMain, protocol, session, net } from 'electron';
+import { app, BrowserWindow, protocol } from 'electron';
 
-import { exchangeCodeForToken, init } from './main/ipc-bridge';
-import { config } from './main/config';
+import { exchangeCodeForToken, init } from './main/ipc-bridge.ts';
+import { config } from './main/config.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,12 +35,12 @@ protocol.registerSchemesAsPrivileged([
 app.on('window-all-closed', app.quit);
 
 app.on('before-quit', () => {
-  if (devServer) {
-    devServer.close();
-    devServer = null;
-    console.log('Closed HTTP server');
-  }
   console.log('App quitting...');
+  if (devServer) {
+    console.log('Closing dev HTTP server');
+    devServer.close(() => console.log('Closed dev HTTP server'));
+    devServer = null;
+  }
 });
 
 app.whenReady().then(() => {

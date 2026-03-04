@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
-import { config } from './config';
+
+import { config } from './config.ts';
 
 interface GitHubTokenResponse {
     access_token: string;
@@ -8,7 +9,7 @@ interface GitHubTokenResponse {
     token_type?: string;
 }
 
-export function init(mainWindow: BrowserWindow){
+export function init(mainWindow: BrowserWindow) {
     ipcMain.on('login-github', () => startGithubOAuth(mainWindow));
 }
 

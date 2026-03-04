@@ -11,8 +11,8 @@
     "bundle": "npm run build:prod && electron-builder",
     "bundle:test": "npm run build:prod && electron-builder --dir",
     "start": "cross-env NODE_ENV=production electron .",
+    "devOLD": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\"",
     "dev": "cross-env NODE_ENV=development VITE_DEV_SERVER_URL=http://localhost:5173 concurrently \"vite\" \"electron -r ts-node/register src/main.ts\"",
-    "preview": "./dist_electron/win-unpacked/MyApp.exe",
     "ls": "bunx asar list dist_electron/win-unpacked/resources/app.asar",
     "vite": "vite",
     "test": "bunx playwright test"
