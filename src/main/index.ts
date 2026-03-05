@@ -1,11 +1,13 @@
 import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
 import path from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import keytar from 'keytar';
 
+import icon from '../../resources/icon.png?asset'
 import { config } from './config';
 import { exchangeCodeForToken, initIpc } from './ipc-bridge';
 import { startDevHttpServer } from './httpServer';
+import { decryptActivationKey } from './activation';
 
 let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 
@@ -124,9 +126,23 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  ipcMain.handle('get-custom-protocol', () => {
-    return config.CUSTOM_URL_PROTOCOL
+  ipcMain.handle('get-config', () => {
+    return {
+      CUSTOM_URL_PROTOCOL: config.CUSTOM_URL_PROTOCOL,
+      ACCOUNT_NAME: config.ACCOUNT_NAME,
+      SERVICE_NAME: config.SERVICE_NAME,
+    }
   })
+
+  ipcMain.handle('activate-app', async (_event, activationKey: string) => {
+    try {
+      const secret = decryptActivationKey(activationKey, config.INIT_BUILD_PASSWORD);
+      await keytar.setPassword(config.SERVICE_NAME, config.ACCOUNT_NAME, secret);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  });
 
   createWindow()
 

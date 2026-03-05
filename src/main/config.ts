@@ -37,6 +37,7 @@ function parseBoolean(value?: string | boolean, defaultVal = false): boolean {
 export const config = {
     isPackaged,
     envFile,
+    INIT_BUILD_PASSWORD: getEnv('INIT_BUILD_PASSWORD'),
     SHOW_DEV_TOOLS: parseBoolean(getEnv('SHOW_DEV_TOOLS', false)),
     CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'myapp'),
     CACHE_USER_SESSIONS: parseBoolean(getEnv('CACHE_USER_SESSIONS', false)),

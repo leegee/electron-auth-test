@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { ApiBridge } from '../shared/bridge'
 
 async function init() {
-  const CUSTOM_URL_PROTOCOL: string = await ipcRenderer.invoke('get-custom-protocol')
+  const CONFIG = await ipcRenderer.invoke('get-config')
 
   const api: ApiBridge = {
     loginGitHub: () => {
@@ -26,18 +26,14 @@ async function init() {
       return ipcRenderer.invoke('keytar-get-password', service, account)
     },
 
-    config: {
-      CUSTOM_URL_PROTOCOL
-    }
+    activateApp(activationKey: string) {
+      return ipcRenderer.invoke('activate-app', activationKey);
+    },
+
+    config: CONFIG,
   }
 
-  if (process.contextIsolated) {
-    contextBridge.exposeInMainWorld('api', api)
-  } else {
-    // fallback
-    // @ts-ignore
-    window.api = api
-  }
+  contextBridge.exposeInMainWorld('api', api)
 }
 
 init()
