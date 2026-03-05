@@ -8,4 +8,6 @@ An Electron application with Solid and TypeScript
 1. Next launch will not require activation.
 1. To regenerate, run `CLEAN=1 bun dev` (which also prints the activation key to the terminal)
 
+## TODO
 
+Replace macros with import.meta.env?
