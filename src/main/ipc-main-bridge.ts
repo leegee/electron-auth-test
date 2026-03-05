@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
 import { config } from './config';
-import { getClientSecret } from './get-client-secret';
+import { getClientSecret } from './auth';
 
 interface GitHubTokenResponseGood {
     access_token: string;

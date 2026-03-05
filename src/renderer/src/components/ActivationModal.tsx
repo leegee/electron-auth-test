@@ -1,7 +1,7 @@
 import { createSignal, onMount } from 'solid-js';
 
 import { showToast } from './Toast';
-import { api } from '@renderer/bridge';
+import { api } from '@renderer/renderer-bridge';
 
 export function ActivationModal(props: { onSuccess: () => void }) {
     const [key, setKey] = createSignal('');

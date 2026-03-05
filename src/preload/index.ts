@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ApiBridge } from '../shared/bridge'
+import type { ApiBridge } from '../shared/bridge-types'
 
 async function init() {
   const CONFIG = await ipcRenderer.invoke('get-config')

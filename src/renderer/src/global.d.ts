@@ -1,4 +1,4 @@
-import type { ApiBridge } from '../../shared/bridge'
+import type { ApiBridge } from '../../shared/bridge-types'
 
 declare global {
     interface Window {

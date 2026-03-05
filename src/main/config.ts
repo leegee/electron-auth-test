@@ -21,8 +21,8 @@ const isPackaged = app.isPackaged;
 const envFile = isPackaged ? '.env.production' : '.env.development';
 dotenvConfig({ path: path.resolve(process.cwd(), envFile) });
 
-const secretFileName = getEnv('SECRET_FILE_PATH', 'secret.tmp.json');
-const SECRET_FILE_PATH = isPackaged
+const secretFileName = getEnv('ACTIVATION_FILE_PATH', 'secret.tmp.json');
+const ACTIVATION_FILE_PATH = isPackaged
     ? path.join(path.dirname(app.getAppPath()), secretFileName) // next to ASAR
     : path.join(process.cwd(), secretFileName);                 // dev root
 
@@ -41,7 +41,7 @@ export const config = {
     CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'myapp'),
     CACHE_USER_SESSIONS: normaliseBoolean(getEnv('CACHE_USER_SESSIONS', false)),
     CLIENT_ID: getEnv('CLIENT_ID'),
-    SECRET_FILE_PATH,
+    ACTIVATION_FILE_PATH,
     SERVICE_NAME: getEnv('SERVICE_NAME', 'electron-github-oauth'),
     SESSION_TOKEN: getEnv('SESSION_TOKEN', 'github-token'),
     ACCOUNT_ACTIVATION: getEnv('ACCOUNT_ACTIVATION', 'account-activation'),

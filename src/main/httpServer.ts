@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { exchangeCodeForToken } from './ipc-bridge';
+import { exchangeCodeForToken } from './ipc-main-bridge';
 import { BrowserWindow } from 'electron';
 import { config } from './config';
 

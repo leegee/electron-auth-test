@@ -5,9 +5,9 @@ import keytar from 'keytar';
 
 import icon from '../../resources/icon.png?asset'
 import { config } from './config';
-import { exchangeCodeForToken, initIpc } from './ipc-bridge';
+import { exchangeCodeForToken, initIpc } from './ipc-main-bridge';
 import { startDevHttpServer } from './httpServer';
-import { decryptActivationKey } from './activation';
+import { decryptActivationKey } from './auth';
 
 let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 

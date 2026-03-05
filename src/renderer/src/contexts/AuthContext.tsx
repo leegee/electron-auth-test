@@ -1,5 +1,5 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
-import { api } from '@renderer/bridge';
+import { api } from '@renderer/renderer-bridge';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 
