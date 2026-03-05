@@ -1,7 +1,7 @@
 import { Show } from 'solid-js'
 import { useAuth } from '../contexts/AuthContext'
 
-export default function AuthPanel() {
+export default function AuthButton() {
     const auth = useAuth()
     return (
 

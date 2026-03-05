@@ -1,6 +1,6 @@
 import { type JSX, Match, Switch } from 'solid-js'
 import LoggedIn from './components/LoggedIn'
-import AuthPanel from './components/AuthPanel'
+import AuthButton from './components/AuthButton'
 import { ToastRoot } from './components/Toast'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import NotLoggedIn from './components/NotLoggedIn'
@@ -10,7 +10,7 @@ export default function App(): JSX.Element {
     <AuthProvider>
       <ToastRoot />
       <nav class="top">
-        <AuthPanel />
+        <AuthButton />
       </nav>
 
       <main class="responsive">
