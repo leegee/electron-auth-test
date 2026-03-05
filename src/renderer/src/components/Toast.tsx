@@ -20,7 +20,7 @@ export function ToastRoot(): JSX.Element {
 
     return (
         <Show when={message()}>
-            <div class={`snackbar ${type()}`}>
+            <div class={`snackbar active ${type()}`}>
                 {message()}
             </div>
         </Show>
