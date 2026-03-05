@@ -2,8 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { ApiBridge } from '../shared/bridge'
 
 async function init() {
-  const CUSTOM_URL_PROTOCOL: string =
-    await ipcRenderer.invoke('get-custom-protocol')
+  const CUSTOM_URL_PROTOCOL: string = await ipcRenderer.invoke('get-custom-protocol')
 
   const api: ApiBridge = {
     loginGitHub: () => {
