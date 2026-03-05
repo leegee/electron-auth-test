@@ -11,9 +11,7 @@ export function ActivationModal(props: { onSuccess: () => void }) {
     const submit = async () => {
         setLoading(true);
         const res = await api.activateApp(key());
-        console.debug(res);
         setLoading(false);
-        setActive(false)
         if (res.success) {
             showToast('Activation successful!', 'success');
             props.onSuccess();
@@ -24,14 +22,15 @@ export function ActivationModal(props: { onSuccess: () => void }) {
 
     onMount(() => {
         setActive(true)
-        showToast('Try', 'success')
     })
 
     return (
         <>
             <dialog class={`modal ${active() ? 'active' : ''}`}>
-                <h2>Enter Activation Key</h2>
-                <div class="field">
+                <h2>Activation</h2>
+                <p>Please enter your 'activation key'.</p>
+                <p>You will only have to do this once.</p>
+                <div class="field top-padding bottom-padding extra-padding">
                     <input
                         type="text"
                         value={key()}
@@ -39,7 +38,7 @@ export function ActivationModal(props: { onSuccess: () => void }) {
                         placeholder="Activation Key"
                     />
                 </div>
-                <nav class="right-align no-space">
+                <nav class="right-align top-padding">
                     <button onClick={submit} disabled={loading()}>
                         {loading() ? 'Activating...' : 'Activate'}
                     </button>

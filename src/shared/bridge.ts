@@ -11,4 +11,5 @@ export interface ApiBridge {
     getPassword: (service: string, account: string) => Promise<string | null>
     loginGitHub: () => void
     onOAuthSuccess: (callback: () => void) => void
+    onOAuthError: (callback: (string) => void) => void
 }

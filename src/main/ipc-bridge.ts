@@ -3,11 +3,19 @@ import keytar from 'keytar';
 
 import { config, initializeSecret } from './config';
 
-interface GitHubTokenResponse {
+interface GitHubTokenResponseGood {
     access_token: string;
     scope?: string;
     token_type?: string;
 }
+
+export interface GitHubTokenResponseBad {
+    error?: string;
+    error_description?: string;
+    error_url?: string;
+}
+
+type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad
 
 ipcMain.handle('keytar-get-password', async (_event, service: string, account: string) => {
     return keytar.getPassword(service, account);
@@ -41,12 +49,14 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
     });
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
+        console.log('oauth window navigating to', url)
         if (!url.startsWith('https://github.com')) event.preventDefault();
     });
 
     oauthWindow.setMenu(null);
 
     oauthWindow.webContents.on('will-redirect', async (event, url) => {
+        console.log('oauth window navigating to', url)
         if (url.startsWith(config.REDIRECT_URI)) {
             event.preventDefault();
             const code = new URL(url).searchParams.get('code');
@@ -64,6 +74,7 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 
 
 export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: string) {
+    console.log('enter exchangeCodeForToken')
     const clientSecret = await initializeSecret();
 
     try {
@@ -79,7 +90,7 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
         });
 
         const tokenData = await tokenResponse.json() as GitHubTokenResponse;
-        const accessToken = tokenData.access_token;
+        const accessToken = (tokenData as GitHubTokenResponseGood).access_token;
 
         if (accessToken) {
             await keytar.setPassword(
@@ -90,7 +101,8 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
             console.log("Token stored securely in Keytar.");
             mainWindow?.webContents.send('oauth-success');
         } else {
-            console.error("Failed to get access token");
+            console.error("Failed to get access token from response:", tokenData);
+            mainWindow?.webContents.send('oauth-error', (tokenData as GitHubTokenResponseBad).error_description);
         }
     } catch (err) {
         console.error("Error exchanging code for token:", err);

@@ -15,14 +15,13 @@ export function AuthProvider(props): JSX.Element {
 
     const login = async () => {
         setLoading(true);
-
         try {
-            const config = window.api.config;
+            const config = api.config;
             const clientSecret = await api.getPassword(config.SERVICE_NAME, config.ACCOUNT_NAME);
-            // if (!clientSecret) {
-            setShowActivationModal(true);
-            return;
-            // }
+            if (!clientSecret) {
+                setShowActivationModal(true);
+                return;
+            }
 
             await api.loginGitHub();
         } catch (err) {
@@ -43,21 +42,23 @@ export function AuthProvider(props): JSX.Element {
     }
 
     onMount(async () => {
-        login();
-        return;
-
-        const token = await api.getPassword('MyApp', 'user@example.com')
-        if (token) {
-            setAuthorised(true)
-            showToast('Already logged in', 'info', 3000)
-        }
-
         if (!oauthListenerAttached) {
             api.onOAuthSuccess(() => {
                 setAuthorised(true)
                 showToast('Login successful!', 'success', 3000)
             })
+            api.onOAuthError((msg: string) => {
+                showToast('Login failed: ' + msg, 'error', 5000);
+            });
             oauthListenerAttached = true
+        }
+
+        login();
+
+        const token = await api.getPassword('MyApp', 'user@example.com')
+        if (token) {
+            setAuthorised(true)
+            showToast('Already logged in', 'info', 3000)
         }
     })
 

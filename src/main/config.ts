@@ -56,8 +56,12 @@ export const config = {
  * First-run initialization of CLIENT_SECRET into Keytar
  */
 export async function initializeSecret(): Promise<string> {
+    console.log('enter initializeSecret')
     const existing = await keytar.getPassword(config.SERVICE_NAME, config.ACCOUNT_NAME);
-    if (existing) return existing;
+    if (existing) {
+        console.log('leave initializeSecret - secret in keytar')
+        return existing;
+    }
 
     if (!fs.existsSync(config.SECRET_FILE_PATH)) {
         throw new Error(`Secret file missing, cannot initialize Keytar from ${config.SECRET_FILE_PATH}`);
