@@ -35,9 +35,9 @@ export function AuthProvider(props): JSX.Element {
         try {
             await api.deletePassword('MyApp', 'user@example.com')
             setAuthorised(false)
-            showToast('Logged out', 'success')
+            showToast('Logged out', 'success', 1_000)
         } catch (err) {
-            showToast('Logout failed: ' + err, 'error')
+            showToast('Logout failed: ' + err, 'error', 10_000)
         }
     }
 
@@ -45,20 +45,20 @@ export function AuthProvider(props): JSX.Element {
         if (!oauthListenerAttached) {
             api.onOAuthSuccess(() => {
                 setAuthorised(true)
-                showToast('Login successful!', 'success', 3000)
+                showToast('Login successful!', 'success', 1_000)
             })
             api.onOAuthError((msg: string) => {
-                showToast('Login failed: ' + msg, 'error', 5000);
+                showToast('Login failed: ' + msg, 'error', 10_000);
             });
             oauthListenerAttached = true
         }
 
-        login();
-
         const token = await api.getPassword('MyApp', 'user@example.com')
         if (token) {
             setAuthorised(true)
-            showToast('Already logged in', 'info', 3000)
+            showToast('You are logged in', 'info', 1_000)
+        } else {
+            login();
         }
     })
 

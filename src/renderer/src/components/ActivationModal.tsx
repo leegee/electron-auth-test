@@ -13,10 +13,10 @@ export function ActivationModal(props: { onSuccess: () => void }) {
         const res = await api.activateApp(key());
         setLoading(false);
         if (res.success) {
-            showToast('Activation successful!', 'success');
+            showToast('Activation successful!', 'success', 1_000);
             props.onSuccess();
         } else {
-            showToast('Activation failed: ' + res.error, 'error');
+            showToast('Activation failed: ' + res.error, 'error', 10_000);
         }
     };
 
