@@ -7,4 +7,4 @@ out
 .env.production
 .env.development
 activation-key.txt
-secret.tmp.json
+activation-key.json

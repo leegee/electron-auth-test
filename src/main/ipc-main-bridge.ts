@@ -75,7 +75,7 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 
 
 export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: string) {
-    console.log('enter exchangeCodeForToken')
+    console.log('Enter exchangeCodeForToken')
 
     const clientSecret = await getClientSecret();
 
@@ -84,6 +84,8 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
         mainWindow?.webContents.send('require-activation');
         return;
     }
+
+    console.log('In exchangeCodeForToken - with secret');
 
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {

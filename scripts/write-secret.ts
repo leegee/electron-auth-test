@@ -7,7 +7,7 @@ if (!CLIENT_SECRET) {
     process.exit(1);
 }
 
-const ACTIVATION_FILE_PATH = process.env.ACTIVATION_FILE_PATH || "secret.tmp.json";
+const ACTIVATION_FILE_PATH = process.env.ACTIVATION_FILE_PATH || "activation-key.json";
 
 const secretData = {
     CLIENT_SECRET

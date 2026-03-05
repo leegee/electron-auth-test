@@ -6,12 +6,15 @@ import { config } from './config';
 
 
 export async function getClientSecret(): Promise<string | null> {
+    console.log('Enter getClientSecret');
     const existing = await keytar.getPassword(config.SERVICE_NAME, config.ACCOUNT_ACTIVATION);
+
+    console.log('In getClientSecret with', existing ? 'existing token' : 'nout');
+
     if (existing) return existing;
 
-    //  try secret file, optional
     try {
-        const secret = await initializeSecret();
+        const secret = await accountantActivation();
         return secret;
     } catch {
         //  neither Keytar nor file exists → manual activation required
@@ -21,7 +24,7 @@ export async function getClientSecret(): Promise<string | null> {
 
 
 // First-run initialization of CLIENT_SECRET into Keytar
-export async function initializeSecret(): Promise<string> {
+async function accountantActivation(): Promise<string> {
     console.log('enter initializeSecret');
 
     try {

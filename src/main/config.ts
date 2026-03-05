@@ -21,7 +21,7 @@ const isPackaged = app.isPackaged;
 const envFile = isPackaged ? '.env.production' : '.env.development';
 dotenvConfig({ path: path.resolve(process.cwd(), envFile) });
 
-const secretFileName = getEnv('ACTIVATION_FILE_PATH', 'secret.tmp.json');
+const secretFileName = getEnv('ACTIVATION_FILE_PATH', 'activation-key.json');
 const ACTIVATION_FILE_PATH = isPackaged
     ? path.join(path.dirname(app.getAppPath()), secretFileName) // next to ASAR
     : path.join(process.cwd(), secretFileName);                 // dev root
