@@ -17,8 +17,7 @@ export default function AuthButton() {
                 onClick={auth.login}
                 disabled={auth.loading()}
             >
-                <i>login</i>
-                {auth.loading() ? 'Logging in…' : 'Log In with GitHub'}
+                <i>login</i> {auth.loading() ? 'Logging in ...' : 'Log In with GitHub'}
             </button>
         </Show>
 
