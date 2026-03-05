@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
-import { config } from './config';
+import { config, initializeSecret } from './config';
 
 interface GitHubTokenResponse {
     access_token: string;
@@ -64,13 +64,15 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 
 
 export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: string) {
+    const clientSecret = await initializeSecret();
+
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({
                 client_id: config.CLIENT_ID,
-                client_secret: config.CLIENT_SECRET,
+                client_secret: clientSecret,
                 code,
                 redirect_uri: config.REDIRECT_URI
             })
@@ -85,7 +87,7 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
                 config.ACCOUNT_NAME,
                 accessToken
             );
-            console.log("Token stored securely in keytar.");
+            console.log("Token stored securely in Keytar.");
             mainWindow?.webContents.send('oauth-success');
         } else {
             console.error("Failed to get access token");
@@ -94,5 +96,4 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
         console.error("Error exchanging code for token:", err);
     }
 }
-
 

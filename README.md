@@ -2,33 +2,13 @@
 
 An Electron application with Solid and TypeScript
 
-## Recommended IDE Setup
+1. Edit  `src/main/config.ts`
+1. Set the environment variable `INIT_CLIENT_SECRET` with the OAuth2 client secret.
+1. Run the `package.json` script `dev` or one of the `build` scripts.
+1. The file `secret.tmp.json` is written and deleted on first use.
 
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+## To Do
 
-## Project Setup
+* Remove the whole `secret.tmp.json` trip.
+* Prompt the user for an 'activation key' that is an AES-encrypted version of the client secret.
 
-### Install
-
-```bash
-$ npm install
-```
-
-### Development
-
-```bash
-$ npm run dev
-```
-
-### Build
-
-```bash
-# For windows
-$ npm run build:win
-
-# For macOS
-$ npm run build:mac
-
-# For Linux
-$ npm run build:linux
-```
