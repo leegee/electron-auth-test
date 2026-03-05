@@ -3,6 +3,7 @@ import keytar from 'keytar';
 
 import { config } from './config';
 import { initializeSecret } from './initialize-secret';
+import fs from 'node:fs/promises';
 
 interface GitHubTokenResponseGood {
     access_token: string;
@@ -76,7 +77,11 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 
 export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: string) {
     console.log('enter exchangeCodeForToken')
-    const clientSecret = await initializeSecret();
+
+    const clientSecret = await keytar.getPassword(
+        config.SERVICE_NAME,
+        config.ACCOUNT_ACTIVATION
+    ) || await initializeSecret();
 
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {

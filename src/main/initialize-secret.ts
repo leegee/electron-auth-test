@@ -9,22 +9,10 @@ import { config } from './config';
 export async function initializeSecret(): Promise<string> {
     console.log('enter initializeSecret');
 
-    const existing = await keytar.getPassword(
-        config.SERVICE_NAME,
-        config.ACCOUNT_ACTIVATION
-    );
-
-    if (existing) {
-        console.log('leave initializeSecret - secret in keytar');
-        return existing;
-    }
-
     try {
         await fs.access(config.SECRET_FILE_PATH);
     } catch {
-        throw new Error(
-            `Secret file missing, cannot initialize Keytar from ${config.SECRET_FILE_PATH}`
-        );
+        throw new Error(`Secret file missing, cannot initialize Keytar from ${config.SECRET_FILE_PATH}`);
     }
 
     console.log('initializing secret from file');
