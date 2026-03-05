@@ -17,6 +17,8 @@ async function init() {
       ipcRenderer.send('delete-password', service, account)
     },
 
+    onRequireActivation: (cb: () => void) => ipcRenderer.on('require-activation', cb),
+
     onOAuthSuccess: (callback) => {
       const wrapper = () => {
         callback()

@@ -1,103 +1,76 @@
-import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js'
-import { api } from '@renderer/bridge'
+import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
+import { api } from '@renderer/bridge';
+import { showToast } from '../components/Toast';
+import { ActivationModal } from '../components/ActivationModal';
 
-import { showToast } from '../components/Toast'
-import { ActivationModal } from '@renderer/components/ActivationModal'
-
-type AuthContextType = {
-    authorised: () => boolean
-    loading: () => boolean
-    login: () => Promise<void>
-    logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextType>()
+const AuthContext = createContext<any>();
 
 export function AuthProvider(props): JSX.Element {
-    const [authorised, setAuthorised] = createSignal(false)
-    const [loading, setLoading] = createSignal(false)
-    const [showActivationModal, setShowActivationModal] = createSignal(false)
+    const [authorised, setAuthorised] = createSignal(false);
+    const [loading, setLoading] = createSignal(false);
+    const [showActivationModal, setShowActivationModal] = createSignal(false);
 
-    let oauthListenerAttached = false
+    let oauthListenerAttached = false;
 
     const login = async () => {
         setLoading(true);
-
         try {
-            await api.loginGitHub();
-        }
-        catch (err) {
+            // Check if activation secret exists in Keytar
+            const clientSecret = await api.getPassword(api.config.SERVICE_NAME, api.config.ACCOUNT_ACTIVATION);
+
+            if (clientSecret !== null) {
+                // Already activated so start GitHub OAuth
+                await api.loginGitHub();
+            } else {
+                // Not activated so show activation modal
+                setShowActivationModal(true);
+            }
+        } catch (err) {
             showToast('Login failed: ' + err, 'error');
-        }
-        finally {
+        } finally {
             setLoading(false);
         }
     };
 
-    const logout = async () => {
-        try {
-            await api.deletePassword(api.config.SERVICE_NAME, api.config.SESSION_TOKEN);
-            setAuthorised(false)
-            showToast('Logged out', 'success', 1_000)
-        } catch (err) {
-            showToast('Logout failed: ' + err, 'error', 10_000)
-        }
-    }
-
-    onMount(async () => {
+    onMount(() => {
         if (!oauthListenerAttached) {
             api.onOAuthSuccess(() => {
-                setAuthorised(true)
-                showToast('Login successful!', 'success', 1_000)
-            })
+                setAuthorised(true);
+                showToast('Login successful!', 'success', 3000);
+            });
 
             api.onOAuthError((msg: string) => {
-                showToast('Login failed: ' + msg, 'error', 10_000);
-            })
+                showToast('Login failed: ' + msg, 'error', 5000);
+            });
 
-            oauthListenerAttached = true
+            api.onRequireActivation(() => {
+                setShowActivationModal(true);
+            });
+
+            oauthListenerAttached = true;
         }
 
-        const config = api.config
-
-        const activation = await api.getPassword(
-            config.SERVICE_NAME,
-            config.ACCOUNT_ACTIVATION
-        )
-
-        if (!activation) {
-            setShowActivationModal(true)
-            return
-        }
-
-        const token = await api.getPassword(
-            config.SERVICE_NAME,
-            config.SESSION_TOKEN
-        )
-
-        if (token) {
-            setAuthorised(true)
-            showToast('You are logged in', 'info', 1_000)
-        } else {
-            login()
-        }
-    })
+        // attempt login on mount
+        login();
+    });
 
     return (
-        <AuthContext.Provider value={{ authorised, loading, login, logout }}>
+        <AuthContext.Provider value={{ authorised, loading, login }}>
             <Switch>
                 <Match when={showActivationModal()}>
-                    <ActivationModal onSuccess={async () => {
-                        setShowActivationModal(false);
-                        login();
-                    }} />
+                    <ActivationModal
+                        onSuccess={async () => {
+                            setShowActivationModal(false);
+                            await api.loginGitHub();
+                        }}
+                    />
                 </Match>
                 <Match when={!showActivationModal()}>
                     {props.children}
                 </Match>
             </Switch>
         </AuthContext.Provider>
-    )
+    );
 }
 
-export const useAuth = () => useContext(AuthContext)
+export const useAuth = () => useContext(AuthContext);

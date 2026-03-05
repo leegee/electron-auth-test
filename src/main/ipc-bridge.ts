@@ -2,8 +2,7 @@ import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
 import { config } from './config';
-import { initializeSecret } from './initialize-secret';
-import fs from 'node:fs/promises';
+import { getClientSecret } from './get-client-secret';
 
 interface GitHubTokenResponseGood {
     access_token: string;
@@ -78,10 +77,13 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: string) {
     console.log('enter exchangeCodeForToken')
 
-    const clientSecret = await keytar.getPassword(
-        config.SERVICE_NAME,
-        config.ACCOUNT_ACTIVATION
-    ) || await initializeSecret();
+    const clientSecret = await getClientSecret();
+
+    if (!clientSecret) {
+        console.log('No client secret found — need manual activation');
+        mainWindow?.webContents.send('require-activation');
+        return;
+    }
 
     try {
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
