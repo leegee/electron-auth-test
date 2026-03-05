@@ -1,7 +1,8 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
-import { config, initializeSecret } from './config';
+import { config } from './config';
+import { initializeSecret } from './initialize-secret';
 
 interface GitHubTokenResponseGood {
     access_token: string;
@@ -27,7 +28,7 @@ ipcMain.handle('keytar-get-password', async (_event, service: string, account: s
 
 export function initIpc(mainWindow: BrowserWindow) {
     ipcMain.on('login-github', () => startGithubOAuth(mainWindow));
-    ipcMain.on('delete-password', () => keytar.deletePassword(config.SERVICE_NAME, config.ACCOUNT_NAME));
+    ipcMain.on('delete-password', () => keytar.deletePassword(config.SERVICE_NAME, config.SESSION_TOKEN));
 }
 
 function startGithubOAuth(mainWindow: BrowserWindow) {
@@ -95,7 +96,7 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
         if (accessToken) {
             await keytar.setPassword(
                 config.SERVICE_NAME,
-                config.ACCOUNT_NAME,
+                config.SESSION_TOKEN,
                 accessToken
             );
             console.log("Token stored securely in Keytar.");

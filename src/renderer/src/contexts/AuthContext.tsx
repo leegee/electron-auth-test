@@ -4,7 +4,14 @@ import { api } from '@renderer/bridge'
 import { showToast } from '../components/Toast'
 import { ActivationModal } from '@renderer/components/ActivationModal'
 
-const AuthContext = createContext<any>()
+type AuthContextType = {
+    authorised: () => boolean
+    loading: () => boolean
+    login: () => Promise<void>
+    logout: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType>()
 
 export function AuthProvider(props): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false)
@@ -15,25 +22,21 @@ export function AuthProvider(props): JSX.Element {
 
     const login = async () => {
         setLoading(true);
-        try {
-            const config = api.config;
-            const clientSecret = await api.getPassword(config.SERVICE_NAME, config.ACCOUNT_NAME);
-            if (!clientSecret) {
-                setShowActivationModal(true);
-                return;
-            }
 
+        try {
             await api.loginGitHub();
-        } catch (err) {
+        }
+        catch (err) {
             showToast('Login failed: ' + err, 'error');
-        } finally {
+        }
+        finally {
             setLoading(false);
         }
     };
 
     const logout = async () => {
         try {
-            await api.deletePassword('MyApp', 'user@example.com')
+            await api.deletePassword(api.config.SERVICE_NAME, api.config.SESSION_TOKEN);
             setAuthorised(false)
             showToast('Logged out', 'success', 1_000)
         } catch (err) {
@@ -47,18 +50,36 @@ export function AuthProvider(props): JSX.Element {
                 setAuthorised(true)
                 showToast('Login successful!', 'success', 1_000)
             })
+
             api.onOAuthError((msg: string) => {
                 showToast('Login failed: ' + msg, 'error', 10_000);
-            });
+            })
+
             oauthListenerAttached = true
         }
 
-        const token = await api.getPassword('MyApp', 'user@example.com')
+        const config = api.config
+
+        const activation = await api.getPassword(
+            config.SERVICE_NAME,
+            config.ACCOUNT_ACTIVATION
+        )
+
+        if (!activation) {
+            setShowActivationModal(true)
+            return
+        }
+
+        const token = await api.getPassword(
+            config.SERVICE_NAME,
+            config.SESSION_TOKEN
+        )
+
         if (token) {
             setAuthorised(true)
             showToast('You are logged in', 'info', 1_000)
         } else {
-            login();
+            login()
         }
     })
 
@@ -68,7 +89,7 @@ export function AuthProvider(props): JSX.Element {
                 <Match when={showActivationModal()}>
                     <ActivationModal onSuccess={async () => {
                         setShowActivationModal(false);
-                        await api.loginGitHub();
+                        login();
                     }} />
                 </Match>
                 <Match when={!showActivationModal()}>

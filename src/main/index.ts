@@ -129,7 +129,8 @@ app.whenReady().then(() => {
   ipcMain.handle('get-config', () => {
     return {
       CUSTOM_URL_PROTOCOL: config.CUSTOM_URL_PROTOCOL,
-      ACCOUNT_NAME: config.ACCOUNT_NAME,
+      ACCOUNT_ACTIVATION: config.ACCOUNT_ACTIVATION,
+      SESSION_TOKEN: config.SESSION_TOKEN,
       SERVICE_NAME: config.SERVICE_NAME,
     }
   })
@@ -137,7 +138,7 @@ app.whenReady().then(() => {
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
       const secret = decryptActivationKey(activationKey, config.INIT_BUILD_PASSWORD);
-      await keytar.setPassword(config.SERVICE_NAME, config.ACCOUNT_NAME, secret);
+      await keytar.setPassword(config.SERVICE_NAME, config.ACCOUNT_ACTIVATION, secret);
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };

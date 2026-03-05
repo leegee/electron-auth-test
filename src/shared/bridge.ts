@@ -1,7 +1,8 @@
 export interface RendererConfig {
     CUSTOM_URL_PROTOCOL: string
     SERVICE_NAME: string
-    ACCOUNT_NAME: string
+    SESSION_TOKEN: string
+    ACCOUNT_ACTIVATION: string;
 }
 
 export interface ApiBridge {
