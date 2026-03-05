@@ -32,15 +32,14 @@ function normaliseBoolean(value?: string | boolean, defaultVal = false): boolean
     return ['true', '1'].includes(value.toLowerCase());
 }
 
-// Config object
 export const config = {
     isPackaged,
     envFile,
-    INIT_BUILD_PASSWORD: getEnv('INIT_BUILD_PASSWORD'),
+    INIT_BUILD_PASSWORD: getEnv('INIT_BUILD_PASSWORD', __BUILD_PASSWORD__),
     SHOW_DEV_TOOLS: normaliseBoolean(getEnv('SHOW_DEV_TOOLS', false)),
     CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'myapp'),
     CACHE_USER_SESSIONS: normaliseBoolean(getEnv('CACHE_USER_SESSIONS', false)),
-    CLIENT_ID: getEnv('CLIENT_ID'),
+    CLIENT_ID: getEnv('CLIENT_ID', __CLIENT_ID__),
     ACTIVATION_FILE_PATH,
     SERVICE_NAME: getEnv('SERVICE_NAME', 'electron-github-oauth'),
     SESSION_TOKEN: getEnv('SESSION_TOKEN', 'github-token'),
