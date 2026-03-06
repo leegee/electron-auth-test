@@ -5,8 +5,8 @@ import keytar from 'keytar';
 
 import icon from '../../resources/icon.png?asset'
 import { config } from './config';
-import { exchangeCodeForToken, initIpc } from './ipc-main-bridge';
-import { decryptActivationKey } from './auth';
+import { initIpc } from './ipc-main-bridge';
+import { decryptActivationKey, exchangeCodeForToken } from './auth';
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -24,14 +24,22 @@ function createWindow(): void {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
     app.quit();
-  } else {
+  }
+  else {
     app.on('second-instance', async (_event, argv) => {
       const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
-      if (urlArg) {
-        const code = new URL(urlArg).searchParams.get('code');
-        if (code) await exchangeCodeForToken(mainWindow, code);
-        mainWindow?.focus();
-      }
+      if (!urlArg) return;
+
+      const code = new URL(urlArg).searchParams.get('code');
+      if (!code) return;
+
+      await exchangeCodeForToken(code, {
+        onSuccess: () => mainWindow.webContents.send('oauth-success'),
+        onError: (err) => mainWindow.webContents.send('oauth-error', err),
+        onRequireActivation: () => mainWindow.webContents.send('require-activation'),
+      });
+
+      mainWindow?.focus();
     });
   }
 

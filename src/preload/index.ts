@@ -12,7 +12,7 @@ async function init() {
     },
 
     deletePassword: (service: string, account: string) => {
-      ipcRenderer.send('delete-password', service, account)
+      ipcRenderer.send('keytar-delete-password', service, account)
     },
 
     onRequireActivation: (cb: () => void) => ipcRenderer.on('require-activation', cb),
