@@ -2,6 +2,7 @@
 
 An Electron application with Solid and TypeScript
 
+1. Configure GitHub OAuth2.0 in [Developer Settings](https://github.com/settings/developers) 
 1. Edit  `src/main/config.ts` and/or `.env`.
 1. Run the `package.json` script `dev`.
     - An activation key will be generated, stored in a file, used, and the file deleted.
@@ -16,3 +17,4 @@ An Electron application with Solid and TypeScript
 Replace macros with import.meta.env?
 
 Update OAuth2 endpoint with local protocol
+

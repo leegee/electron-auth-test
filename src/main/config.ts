@@ -37,7 +37,7 @@ export const config = {
     envFile,
     INIT_BUILD_PASSWORD: getEnv('INIT_BUILD_PASSWORD', __BUILD_PASSWORD__),
     SHOW_DEV_TOOLS: normaliseBoolean(getEnv('SHOW_DEV_TOOLS', false)),
-    CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'myapp'),
+    CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'electronsectest'),
     CACHE_USER_SESSIONS: normaliseBoolean(getEnv('CACHE_USER_SESSIONS', false)),
     CLIENT_ID: getEnv('CLIENT_ID', __CLIENT_ID__),
     ACTIVATION_FILE_PATH,
@@ -46,7 +46,7 @@ export const config = {
     ACCOUNT_ACTIVATION: getEnv('ACCOUNT_ACTIVATION', 'account-activation'),
     DEV_REDIRECT_URI: 'http://localhost:3000/callback',
     REDIRECT_URI: isPackaged
-        ? `${getEnv('CUSTOM_URL_PROTOCOL', 'myapp')}://callback`
+        ? `${getEnv('CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
         : 'http://localhost:3000/callback'
 } as const;
 

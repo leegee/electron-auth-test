@@ -44,6 +44,6 @@ publish:
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 protocols:
-  - name: MyApp Test Protocol
+  - name: electronsectest Test Protocol
     schemes:
-      - myapp
+      - electronsectest
