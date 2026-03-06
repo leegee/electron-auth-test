@@ -103,7 +103,7 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
             mainWindow?.webContents.send('oauth-success');
         } else {
             const errorRes = tokenData as GitHubTokenResponseBad;
-            console.error("ipc-main-bridge: Failed to get access token from response:", errorRes);
+            console.warn("ipc-main-bridge: Failed to get access token from response:", errorRes);
             mainWindow?.webContents.send('oauth-error', errorRes);
         }
     } catch (err) {

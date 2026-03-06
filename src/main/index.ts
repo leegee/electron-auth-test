@@ -6,10 +6,7 @@ import keytar from 'keytar';
 import icon from '../../resources/icon.png?asset'
 import { config } from './config';
 import { exchangeCodeForToken, initIpc } from './ipc-main-bridge';
-import { startDevHttpServer } from './httpServer';
 import { decryptActivationKey } from './auth';
-
-let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -23,10 +20,6 @@ function createWindow(): void {
       sandbox: false
     }
   })
-
-  if (!config.isPackaged && !devServer) {
-    devServer = startDevHttpServer(mainWindow);
-  }
 
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
@@ -78,11 +71,6 @@ protocol.registerSchemesAsPrivileged([
 
 app.on('before-quit', () => {
   console.log('App quitting...');
-  if (devServer) {
-    console.log('Closing dev HTTP server');
-    devServer.close(() => console.log('Closed dev HTTP server'));
-    devServer = null;
-  }
 });
 
 
