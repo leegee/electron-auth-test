@@ -42,22 +42,18 @@ export function AuthProvider(props): JSX.Element {
 
             api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
                 console.log('OAuth error received:', errorMsg);
-                alert(errorMsg.error_description)
 
                 switch (errorMsg.error) {
                     case 'incorrect_client_credentials':
-                        alert(1)
                         await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
                         setShowActivationModal(true);
                         break;
 
                     case 'access_denied':
-                        alert(2)
                         showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
                         break;
 
                     default:
-                        alert(3)
                         showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
                         api.loginGitHub();
                         break;
