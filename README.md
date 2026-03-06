@@ -14,7 +14,5 @@ An Electron application with Solid and TypeScript
 
 ## TODO
 
-Replace macros with import.meta.env?
-
 Update OAuth2 endpoint with local protocol
 

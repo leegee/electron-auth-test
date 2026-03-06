@@ -28,11 +28,11 @@ ipcMain.handle('keytar-get-password', async (_event, service: string, account: s
 
 export function initIpc(mainWindow: BrowserWindow) {
     ipcMain.on('login-github', () => startGithubOAuth(mainWindow));
-    ipcMain.on('delete-password', () => keytar.deletePassword(config.SERVICE_NAME, config.SESSION_TOKEN));
+    ipcMain.on('delete-password', () => keytar.deletePassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN));
 }
 
 function startGithubOAuth(mainWindow: BrowserWindow) {
-    const ses = session.fromPartition('persist:oauthWindow', { cache: config.CACHE_USER_SESSIONS });
+    const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
     const oauthWindow = new BrowserWindow({
         width: 500,
@@ -58,7 +58,7 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
 
     oauthWindow.webContents.on('will-redirect', async (event, url) => {
         console.log('oauth window navigating to', url)
-        if (url.startsWith(config.REDIRECT_URI)) {
+        if (url.startsWith(config.VITE_REDIRECT_URI)) {
             event.preventDefault();
             const code = new URL(url).searchParams.get('code');
             if (code) await exchangeCodeForToken(mainWindow, code);
@@ -66,11 +66,12 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
         }
     });
 
+    const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&redirect_uri=${encodeURIComponent(config.VITE_REDIRECT_URI)}&scope=read:user`;
+    console.log('oauthUrl', oauthUrl)
+
     oauthWindow.show();
     oauthWindow.focus();
-    oauthWindow.loadURL(
-        `https://github.com/login/oauth/authorize?client_id=${config.CLIENT_ID}&redirect_uri=${encodeURIComponent(config.REDIRECT_URI)}&scope=read:user`
-    );
+    oauthWindow.loadURL(oauthUrl);
 }
 
 
@@ -92,10 +93,10 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({
-                client_id: config.CLIENT_ID,
+                client_id: config.VITE_CLIENT_ID,
                 client_secret: clientSecret,
                 code,
-                redirect_uri: config.REDIRECT_URI
+                redirect_uri: config.VITE_REDIRECT_URI
             })
         });
 
@@ -104,8 +105,8 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
 
         if (accessToken) {
             await keytar.setPassword(
-                config.SERVICE_NAME,
-                config.SESSION_TOKEN,
+                config.VITE_SERVICE_NAME,
+                config.VITE_SESSION_TOKEN,
                 accessToken
             );
             console.log("Token stored securely in Keytar.");

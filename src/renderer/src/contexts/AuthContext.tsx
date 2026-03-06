@@ -16,7 +16,7 @@ export function AuthProvider(props): JSX.Element {
         setLoading(true);
         try {
             // Check if activation secret exists in Keytar
-            const clientSecret = await api.getPassword(api.config.SERVICE_NAME, api.config.ACCOUNT_ACTIVATION);
+            const clientSecret = await api.getPassword(api.config.VITE_SERVICE_NAME, api.config.VITE_ACCOUNT_ACTIVATION);
 
             if (clientSecret !== null) {
                 // Already activated so start GitHub OAuth

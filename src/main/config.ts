@@ -10,7 +10,8 @@ import { config as dotenvConfig } from 'dotenv';
  * Throws if missing and no default provided.
  */
 export function getEnv(name: string, defaultValue?: string | boolean): string {
-    const envVal = process.env[name];
+    // const envVal = process.env[name];
+    const envVal = import.meta.env[name];
     const value = envVal !== undefined ? envVal : defaultValue;
     if (value === undefined) throw new Error(`Missing env var ${name}`);
     return String(value);
@@ -21,8 +22,8 @@ const isPackaged = app.isPackaged;
 const envFile = isPackaged ? '.env.production' : '.env.development';
 dotenvConfig({ path: path.resolve(process.cwd(), envFile) });
 
-const secretFileName = getEnv('ACTIVATION_FILE_PATH', 'activation-key.json');
-const ACTIVATION_FILE_PATH = isPackaged
+const secretFileName = getEnv('VITE_ACTIVATION_FILE_PATH', 'activation-key.json');
+const VITE_ACTIVATION_FILE_PATH = isPackaged
     ? path.join(path.dirname(app.getAppPath()), secretFileName) // next to ASAR
     : path.join(process.cwd(), secretFileName);                 // dev root
 
@@ -35,18 +36,18 @@ function normaliseBoolean(value?: string | boolean, defaultVal = false): boolean
 export const config = {
     isPackaged,
     envFile,
-    INIT_BUILD_PASSWORD: getEnv('INIT_BUILD_PASSWORD', __BUILD_PASSWORD__),
-    SHOW_DEV_TOOLS: normaliseBoolean(getEnv('SHOW_DEV_TOOLS', false)),
-    CUSTOM_URL_PROTOCOL: getEnv('CUSTOM_URL_PROTOCOL', 'electronsectest'),
-    CACHE_USER_SESSIONS: normaliseBoolean(getEnv('CACHE_USER_SESSIONS', false)),
-    CLIENT_ID: getEnv('CLIENT_ID', __CLIENT_ID__),
-    ACTIVATION_FILE_PATH,
-    SERVICE_NAME: getEnv('SERVICE_NAME', 'electron-github-oauth'),
-    SESSION_TOKEN: getEnv('SESSION_TOKEN', 'github-token'),
-    ACCOUNT_ACTIVATION: getEnv('ACCOUNT_ACTIVATION', 'account-activation'),
-    DEV_REDIRECT_URI: 'http://localhost:3000/callback',
-    REDIRECT_URI: isPackaged
-        ? `${getEnv('CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
+    VITE_BUILD_PASSWORD: getEnv('VITE_BUILD_PASSWORD'),
+    VITE_SHOW_DEV_TOOLS: normaliseBoolean(getEnv('VITE_SHOW_DEV_TOOLS', false)),
+    VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
+    VITE_CACHE_USER_SESSIONS: normaliseBoolean(getEnv('VITE_CACHE_USER_SESSIONS', false)),
+    VITE_CLIENT_ID: getEnv('VITE_CLIENT_ID'),
+    VITE_ACTIVATION_FILE_PATH,
+    VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electron-github-oauth'),
+    VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'github-token'),
+    VITE_ACCOUNT_ACTIVATION: getEnv('VITE_ACCOUNT_ACTIVATION', 'account-activation'),
+    DEV_VITE_REDIRECT_URI: 'http://localhost:3000/callback',
+    VITE_REDIRECT_URI: isPackaged
+        ? `${getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
         : 'http://localhost:3000/callback'
 } as const;
 

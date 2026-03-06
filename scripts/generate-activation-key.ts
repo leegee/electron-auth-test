@@ -1,11 +1,11 @@
 import * as crypto from 'crypto';
 import fs from 'fs';
 
-const CLIENT_SECRET = process.env.INIT_CLIENT_SECRET;
-const INIT_BUILD_PASSWORD = process.env.INIT_BUILD_PASSWORD;
+const CLIENT_SECRET = process.env.VITE_INIT_CLIENT_SECRET;
+const VITE_BUILD_PASSWORD = process.env.VITE_BUILD_PASSWORD;
 
-if (!INIT_BUILD_PASSWORD) {
-    console.error("Missing INIT_BUILD_PASSWORD in environment");
+if (!VITE_BUILD_PASSWORD) {
+    console.error("Missing VITE_BUILD_PASSWORD in environment");
     process.exit(1);
 }
 if (!CLIENT_SECRET) {
@@ -24,7 +24,7 @@ function generateActivationKey(secret: string, password: string) {
     return Buffer.concat([iv, tag, encrypted]).toString('base64');
 }
 
-const activationKey = generateActivationKey(CLIENT_SECRET, INIT_BUILD_PASSWORD);
+const activationKey = generateActivationKey(CLIENT_SECRET, VITE_BUILD_PASSWORD);
 
 fs.writeFileSync('activation-key.txt', activationKey);
 console.log('Activation key generated:', activationKey);

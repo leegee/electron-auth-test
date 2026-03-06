@@ -34,7 +34,7 @@ function createWindow(): void {
     app.quit();
   } else {
     app.on('second-instance', async (_event, argv) => {
-      const urlArg = argv.find(a => a.startsWith(`${config.CUSTOM_URL_PROTOCOL}://`));
+      const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
       if (urlArg) {
         const code = new URL(urlArg).searchParams.get('code');
         if (code) await exchangeCodeForToken(mainWindow, code);
@@ -49,7 +49,7 @@ function createWindow(): void {
 
   initIpc(mainWindow);
 
-  if (config.SHOW_DEV_TOOLS) {
+  if (config.VITE_SHOW_DEV_TOOLS) {
     mainWindow.webContents.openDevTools();
   }
 
@@ -72,7 +72,7 @@ function createWindow(): void {
 
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: config.CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } }
+  { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } }
 ]);
 
 
@@ -96,25 +96,25 @@ app.whenReady().then(() => {
 
   if (config.isPackaged) {
     try {
-      if (!app.isDefaultProtocolClient(config.CUSTOM_URL_PROTOCOL)) {
-        console.log('Set as default protocol handler for', config.CUSTOM_URL_PROTOCOL);
-        app.setAsDefaultProtocolClient(config.CUSTOM_URL_PROTOCOL);
+      if (!app.isDefaultProtocolClient(config.VITE_CUSTOM_URL_PROTOCOL)) {
+        console.log('Set as default protocol handler for', config.VITE_CUSTOM_URL_PROTOCOL);
+        app.setAsDefaultProtocolClient(config.VITE_CUSTOM_URL_PROTOCOL);
       }
     } catch (err) {
-      throw new Error(`Failed to setAsDefaultProtocolClient "${config.CUSTOM_URL_PROTOCOL}" protocol ${(err as Error).toString()}`);
+      throw new Error(`Failed to setAsDefaultProtocolClient "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol ${(err as Error).toString()}`);
     }
   }
 
   try {
-    protocol.registerFileProtocol(config.CUSTOM_URL_PROTOCOL, (request, callback) => {
-      const urlPath = request.url.replace(`${config.CUSTOM_URL_PROTOCOL}://`, '');
+    protocol.registerFileProtocol(config.VITE_CUSTOM_URL_PROTOCOL, (request, callback) => {
+      const urlPath = request.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
       // Adjust path for packaged vs dev if needed
       const filePath = path.join(app.getAppPath(), 'dist', 'renderer', urlPath);
-      console.log(`Serving ${config.CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
+      console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
       callback({ path: filePath });
     });
   } catch (err) {
-    console.error(`Failed to register "${config.CUSTOM_URL_PROTOCOL}" protocol`, err);
+    console.error(`Failed to register "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol`, err);
   }
 
   // Default open or close DevTools by F12 in development
@@ -128,17 +128,17 @@ app.whenReady().then(() => {
 
   ipcMain.handle('get-config', () => {
     return {
-      CUSTOM_URL_PROTOCOL: config.CUSTOM_URL_PROTOCOL,
-      ACCOUNT_ACTIVATION: config.ACCOUNT_ACTIVATION,
-      SESSION_TOKEN: config.SESSION_TOKEN,
-      SERVICE_NAME: config.SERVICE_NAME,
+      VITE_CUSTOM_URL_PROTOCOL: config.VITE_CUSTOM_URL_PROTOCOL,
+      VITE_ACCOUNT_ACTIVATION: config.VITE_ACCOUNT_ACTIVATION,
+      VITE_SESSION_TOKEN: config.VITE_SESSION_TOKEN,
+      VITE_SERVICE_NAME: config.VITE_SERVICE_NAME,
     }
   })
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
-      const secret = decryptActivationKey(activationKey, config.INIT_BUILD_PASSWORD);
-      await keytar.setPassword(config.SERVICE_NAME, config.ACCOUNT_ACTIVATION, secret);
+      const secret = decryptActivationKey(activationKey, config.VITE_BUILD_PASSWORD);
+      await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION, secret);
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };

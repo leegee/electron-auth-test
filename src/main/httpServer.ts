@@ -6,7 +6,7 @@ import { config } from './config';
 export function startDevHttpServer(mainWindow: BrowserWindow) {
     const server = createServer(async (req, res) => {
         if (!req.url) return;
-        const reqUrl = new URL(req.url, config.DEV_REDIRECT_URI);
+        const reqUrl = new URL(req.url, config.DEV_VITE_REDIRECT_URI);
 
         if (reqUrl.pathname === '/callback') {
             const code = reqUrl.searchParams.get('code');
@@ -25,7 +25,7 @@ export function startDevHttpServer(mainWindow: BrowserWindow) {
     });
 
     server.listen(3000, () => {
-        console.log(`Dev HTTP server running on ${config.DEV_REDIRECT_URI}`);
+        console.log(`Dev HTTP server running on ${config.DEV_VITE_REDIRECT_URI}`);
     });
 
     return server;

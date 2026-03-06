@@ -7,7 +7,7 @@ import { config } from './config';
 
 export async function getClientSecret(): Promise<string | null> {
     console.log('Enter getClientSecret');
-    const existing = await keytar.getPassword(config.SERVICE_NAME, config.ACCOUNT_ACTIVATION);
+    const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION);
 
     console.log('In getClientSecret with', existing ? 'existing token' : 'nout');
 
@@ -28,16 +28,16 @@ async function accountantActivation(): Promise<string> {
     console.log('enter initializeSecret');
 
     try {
-        await fs.access(config.ACTIVATION_FILE_PATH);
+        await fs.access(config.VITE_ACTIVATION_FILE_PATH);
     } catch {
-        throw new Error(`Secret file missing, cannot initialize Keytar from ${config.ACTIVATION_FILE_PATH}`);
+        throw new Error(`Secret file missing, cannot initialize Keytar from ${config.VITE_ACTIVATION_FILE_PATH}`);
     }
 
     console.log('initializing secret from file');
 
     let secretData: any;
     try {
-        const raw = await fs.readFile(config.ACTIVATION_FILE_PATH, 'utf-8');
+        const raw = await fs.readFile(config.VITE_ACTIVATION_FILE_PATH, 'utf-8');
         secretData = JSON.parse(raw);
     } catch {
         throw new Error('Invalid activation file format');
@@ -47,15 +47,15 @@ async function accountantActivation(): Promise<string> {
         throw new Error('ACTIVATION_KEY missing in activation file');
     }
 
-    const secret = decryptActivationKey(secretData.ACTIVATION_KEY, config.INIT_BUILD_PASSWORD);
+    const secret = decryptActivationKey(secretData.ACTIVATION_KEY, config.VITE_BUILD_PASSWORD);
 
     await keytar.setPassword(
-        config.SERVICE_NAME,
-        config.ACCOUNT_ACTIVATION,
+        config.VITE_SERVICE_NAME,
+        config.VITE_ACCOUNT_ACTIVATION,
         secret
     );
 
-    await fs.unlink(config.ACTIVATION_FILE_PATH);
+    await fs.unlink(config.VITE_ACTIVATION_FILE_PATH);
 
     console.log('leave initializeSecret - secret stored in keytar');
 

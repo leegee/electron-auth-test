@@ -1,8 +1,8 @@
 export interface RendererConfig {
-    CUSTOM_URL_PROTOCOL: string
-    SERVICE_NAME: string
-    SESSION_TOKEN: string
-    ACCOUNT_ACTIVATION: string;
+    VITE_CUSTOM_URL_PROTOCOL: string
+    VITE_SERVICE_NAME: string
+    VITE_SESSION_TOKEN: string
+    VITE_ACCOUNT_ACTIVATION: string;
 }
 
 export interface ApiBridge {
