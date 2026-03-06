@@ -2,7 +2,6 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import { storeActivationKey } from './auth';
 
 // %USERPROFILE%\AppData\Roaming\<app-name>\logs\main.log
 autoUpdater.logger = log;
