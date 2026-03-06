@@ -13,13 +13,18 @@ export function AuthProvider(props): JSX.Element {
 
     let oauthListenerAttached = false;
 
+    const logout = async () => {
+        console.log('logout')
+        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_SESSION_TOKEN);
+        setAuthorised(false);
+    }
+
     const login = async () => {
         setLoading(true);
         try {
             // Check if activation secret exists in Keytar
             const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
-
-            console.log('client secret', clientSecret)
+            console.log('got client secret')
 
             if (clientSecret !== null) {
                 // Already activated so start GitHub OAuth
@@ -75,7 +80,7 @@ export function AuthProvider(props): JSX.Element {
 
     // Guard children 
     return (
-        <AuthContext.Provider value={{ authorised, loading, login }}>
+        <AuthContext.Provider value={{ authorised, loading, login, logout }}>
             <Switch>
                 <Match when={showActivationModal()}>
                     <ActivationModal
