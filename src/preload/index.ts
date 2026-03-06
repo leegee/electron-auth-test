@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi } from '../shared/bridge-types';
+import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
 import type { GitHubTokenResponseBad } from '../shared/github-types';
 
 function listenOnce<T>(channel: string, callback: (payload: T) => void, removeChannels: string[] = []) {
@@ -27,10 +27,19 @@ const activationApi: ActivationApi = {
   activateApp: (key) => ipcRenderer.invoke('activate-app', key),
 };
 
+const updatesApi: UpdatesApi = {
+  onUpdateAvailable: (cb: (version: string) => void) => ipcRenderer.on('update-available', (_e, version) => cb(version)),
+  onUpdateError: (cb: (message: string) => void) => ipcRenderer.on('update-error', (_e, msg) => cb(msg)),
+  onUpdateDownloaded: (cb: () => void) => ipcRenderer.on('update-downloaded', cb),
+  downloadUpdate: () => ipcRenderer.send('download-update'),
+  installUpdate: () => ipcRenderer.send('install-update'),
+};
+
 const api: ApiBridge = {
   ...keytarApi,
   ...oauthApi,
   ...activationApi,
+  ...updatesApi,
 };
 
 contextBridge.exposeInMainWorld('api', api);

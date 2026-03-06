@@ -1,44 +1,80 @@
-import { createSignal, Show, type JSX } from 'solid-js'
-
+import { createSignal, For, type JSX } from 'solid-js'
 import './Toast.css'
 
 type ToastType = 'success' | 'error' | 'info'
 
-let showToastFn: (msg: string, type?: ToastType, duration?: number) => void
+type Toast = {
+    id: number
+    message: string
+    type: ToastType
+    confirm?: (result: boolean) => void
+}
 
-let cancelToastFn: () => void;
+let showToastFn: (msg: string, type?: ToastType, duration?: number) => void
+let confirmToastFn: (msg: string) => Promise<boolean>
 
 export function ToastRoot(): JSX.Element {
-    const [message, setMessage] = createSignal('')
-    const [type, setType] = createSignal<ToastType>('info')
+    const [toasts, setToasts] = createSignal<Toast[]>([])
+    let idCounter = 0
 
-    const show = (msg: string, t: ToastType = 'info', duration = 5_000) => {
-        setMessage(msg)
-        setType(t)
-        setTimeout(() => setMessage(''), duration)
+    const removeToast = (id: number) => {
+        setToasts(t => t.filter(x => x.id !== id))
     }
 
-    const cancel = () => {
-        setMessage('')
+    const show = (msg: string, type: ToastType = 'info', duration = 5000) => {
+        const id = ++idCounter
+
+        setToasts(t => [...t, { id, message: msg, type }])
+
+        if (duration > 0) {
+            setTimeout(() => removeToast(id), duration)
+        }
+    }
+
+    const confirmToast = (msg: string): Promise<boolean> => {
+        return new Promise(resolve => {
+            const id = ++idCounter
+
+            const confirm = (result: boolean) => {
+                removeToast(id)
+                resolve(result)
+            }
+
+            setToasts(t => [
+                ...t,
+                { id, message: msg, type: 'info', confirm }
+            ])
+        })
     }
 
     showToastFn = show
-    cancelToastFn = cancel
+    confirmToastFn = confirmToast
 
     return (
-        <Show when={message()}>
-            <div class={`snackbar active ${type()}`}>
-                {message()}
-            </div>
-        </Show>
+        <div class="toast-component">
+            <For each={toasts()}>
+                {(toast) => (
+                    <div class={`mysnackbar square active ${toast.type}`}>
+                        <div>{toast.message}</div>
+
+                        {toast.confirm && (
+                            <nav class="right-align">
+                                <button onClick={() => toast.confirm!(false)} class="transparent square small"><i>close_small</i></button>
+                                <button onClick={() => toast.confirm!(true)} class="transparent square small"><i>check_circle</i></button>
+                            </nav>
+                        )}
+                    </div>
+                )
+                }
+            </For >
+        </div >
     )
 }
 
-export function showToast(msg: string, type: ToastType = 'info', duration = 5_000) {
-    if (showToastFn) showToastFn(msg, type, duration)
-    else console.warn('Toast not mounted yet')
+export function showToast(msg: string, type: ToastType = 'info', duration = 5000) {
+    showToastFn?.(msg, type, duration)
 }
 
-export function cancelToast() {
-    if (cancelToastFn) cancelToastFn()
+export function confirmToast(msg: string): Promise<boolean> {
+    return confirmToastFn?.(msg) ?? Promise.resolve(false)
 }

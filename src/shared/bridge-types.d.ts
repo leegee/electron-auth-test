@@ -1,3 +1,4 @@
+import { ipcRenderer } from 'electron';
 import type { GitHubTokenResponseBad } from './github-types';
 
 export interface KeytarApi {
@@ -16,4 +17,12 @@ export interface ActivationApi {
     activateApp(activationKey: string): Promise<{ success: boolean; error?: string }>;
 }
 
-export type ApiBridge = KeytarApi & OAuthApi & ActivationApi;
+export interface UpdatesApi {
+    onUpdateAvailable(cb: (version: string) => void): void;
+    onUpdateError(cb: (message: string) => void): void;
+    onUpdateDownloaded(cb: () => void): void;
+    downloadUpdate(): void;
+    installUpdate(): void;
+}
+
+export type ApiBridge = KeytarApi & OAuthApi & ActivationApi & UpdatesApi;

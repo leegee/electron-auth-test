@@ -7,6 +7,7 @@ import icon from '../../resources/icon.png?asset';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
 import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
+import { initAutoUpdates } from './auto-updates';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } },
@@ -14,18 +15,18 @@ protocol.registerSchemesAsPrivileged([
 
 // Main entry
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.electron');
+  electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
+
 
   const mainWindow = createWindow();
 
   if (!handleSecondInstance(mainWindow)) return;
 
   registerCustomProtocol();
-
   initIpc(mainWindow);
+  initAutoUpdates(mainWindow)
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
-
     try {
       console.log('Received activate-app')
       await storeActivationKey(activationKey)

@@ -1,4 +1,4 @@
-appId: com.electron.app
+appId: space.goddards.lee.electron-secure-test
 productName: electron-secure-test
 directories:
   buildResources: build
@@ -8,6 +8,7 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{activation-key*}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
@@ -39,8 +40,11 @@ appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: leegee
+  repo: electron-auth-test
+  private: false   
+  releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 protocols:

@@ -1,6 +1,29 @@
-.snackbar {
-    color: white;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+.toast-component {
+    position: fixed;
+    padding: 1em;
+    display: flex;
+    flex-direction: column-reverse;
+    bottom: 0;
+    gap: 0.5rem;
+    z-index: 9999;
+    width: 25em;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.mysnackbar {
+    z-index: 999;
+    position: relative !important;
+    top: unset !important;
+    transform: unset !important;
+    width: 100%;
+    padding: 0.6em;
+    display: flex;
+
+    nav {
+        margin-block-start: 0 !important;
+        gap: 0 !important;
+    }
 }
 
 .success {
@@ -8,9 +31,6 @@
 }
 
 .success:before {
-    font-family: 'Material Symbols Outlined';
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    font-size: 120%;
     content: '\e86c';
 }
 
@@ -19,9 +39,6 @@
 }
 
 .error:before {
-    font-family: 'Material Symbols Outlined';
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    font-size: 120%;
     content: '\e000';
 }
 
@@ -29,12 +46,20 @@
     background-color: blue;
 }
 
-
 .info:before {
+    content: '\e88e';
+}
+
+
+.info:before,
+.success::before,
+.error:before {
     font-family: 'Material Symbols Outlined';
     font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    font-size: 120%;
-    content: '\e88e';
+    font-size: 160%;
+    margin-right: 0.6em;
+    display: flex;
+    align-items: center;
 }
 
 .snackbar-enter {

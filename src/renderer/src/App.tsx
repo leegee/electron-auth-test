@@ -1,11 +1,17 @@
-import { type JSX, Match, Switch } from 'solid-js'
+import { type JSX, Match, onMount, Switch } from 'solid-js'
+
+import { initUpdateHandlers } from './lib/auto-updates'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
+
 import LoggedIn from './components/LoggedIn'
+import NotLoggedIn from './components/NotLoggedIn'
 import AuthButton from './components/AuthButton'
 import { ToastRoot } from './components/Toast'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import NotLoggedIn from './components/NotLoggedIn'
 
 export default function App(): JSX.Element {
+
+  onMount(initUpdateHandlers);
+
   return (
     <>
       <ToastRoot />
