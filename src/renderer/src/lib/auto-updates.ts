@@ -16,7 +16,4 @@ export function initUpdateHandlers() {
         showToast(`Update error: ${msg}`, 'error')
     })
 
-    confirmToast(`Update XXX available. Download?`)
-    confirmToast(`Update XXX available. Download?`)
-
 }

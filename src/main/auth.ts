@@ -143,12 +143,12 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     oauthWindow.webContents.on('will-redirect', async (event, url) => {
         console.log('will-redirect', url, 'test for', config.VITE_REDIRECT_URI)
         if (url.startsWith(config.VITE_REDIRECT_URI)) {
-            console.log('will-direct got', config.VITE_REDIRECT_URI)
             event.preventDefault();
+            oauthWindow.close();
+            console.log('will-direct matched', config.VITE_REDIRECT_URI)
             const code = new URL(url).searchParams.get('code');
             console.log('will-direct code', code)
             if (code) await exchangeCodeForToken(code, callbacks);
-            oauthWindow.close();
         }
     });
 
@@ -163,13 +163,14 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
  */
 export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbacks) {
     const clientSecret = await getClientSecret();
-
     if (!clientSecret) {
+        console.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
         callbacks.onRequireActivation();
         return;
     }
 
     try {
+        console.log('exchangeCodeForToken: trying to get token')
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
@@ -185,13 +186,15 @@ export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbac
         const accessToken = (tokenData as GitHubTokenResponseGood).access_token;
 
         if (accessToken) {
+            console.log('exchangeCodeForToken: got token')
             await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN, accessToken);
             callbacks.onSuccess();
         } else {
+            console.log('exchangeCodeForToken: failed to get token', tokenData)
             callbacks.onError(tokenData as GitHubTokenResponseBad);
         }
     } catch (err) {
-        console.error('Error exchanging code for token:', err);
+        console.error('exchangeCodeForToken: error exchanging code for token:', err);
         const errorRes: GitHubTokenResponseBad = {
             error: 'network_error',
             error_description: (err as Error).message,

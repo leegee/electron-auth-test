@@ -1,4 +1,5 @@
 import { createSignal, For, type JSX } from 'solid-js'
+import { Transition } from 'solid-transition-group'
 import './Toast.css'
 
 type ToastType = 'success' | 'error' | 'info'
@@ -54,18 +55,24 @@ export function ToastRoot(): JSX.Element {
         <div class="toast-component">
             <For each={toasts()}>
                 {(toast) => (
-                    <div class={`mysnackbar square active ${toast.type}`}>
-                        <div>{toast.message}</div>
+                    <Transition
+                        enterClass="mysnackbar-enter"
+                        enterActiveClass="mysnackbar-enter-active"
+                        exitClass="mysnackbar-exit"
+                        exitActiveClass="mysnackbar-exit-active"
+                    >
+                        <div class={`mysnackbar square ${toast.type}`}>
+                            <div>{toast.message}</div>
 
-                        {toast.confirm && (
-                            <nav class="right-align">
-                                <button onClick={() => toast.confirm!(false)} class="transparent square small"><i>close_small</i></button>
-                                <button onClick={() => toast.confirm!(true)} class="transparent square small"><i>check_circle</i></button>
-                            </nav>
-                        )}
-                    </div>
-                )
-                }
+                            {toast.confirm && (
+                                <nav class="right-align">
+                                    <button onClick={() => toast.confirm!(false)} class="transparent square small"><i>close_small</i></button>
+                                    <button onClick={() => toast.confirm!(true)} class="transparent square small"><i>check_circle</i></button>
+                                </nav>
+                            )}
+                        </div>
+                    </Transition>
+                )}
             </For >
         </div >
     )

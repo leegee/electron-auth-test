@@ -62,23 +62,25 @@
     align-items: center;
 }
 
-.snackbar-enter {
-    transform: translateY(-20px);
+
+
+.mysnackbar-enter {
+    transform: translateY(30px);
     opacity: 0;
 }
 
-.snackbar-enter-active {
+.mysnackbar-enter-active {
     transform: translateY(0);
     opacity: 1;
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-.snackbar-exit {
+.mysnackbar-exit {
     transform: translateY(0);
     opacity: 1;
 }
 
-.snackbar-exit-active {
+.mysnackbar-exit-active {
     transform: translateY(-20px);
     opacity: 0;
     transition: transform 0.3s ease, opacity 0.3s ease;
