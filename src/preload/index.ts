@@ -1,51 +1,36 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { ApiBridge } from '../shared/bridge-types'
+import { contextBridge, ipcRenderer } from 'electron';
+import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi } from '../shared/bridge-types';
+import type { GitHubTokenResponseBad } from '../shared/github-types';
 
-async function init() {
-  const api: ApiBridge = {
-    loginGitHub: () => {
-      ipcRenderer.send('login-github')
-    },
-
-    getPassword: (service: string, account: string) => {
-      return ipcRenderer.invoke('keytar-get-password', service, account)
-    },
-
-    deletePassword: (service: string, account: string) => {
-      ipcRenderer.send('keytar-delete-password', service, account)
-    },
-
-    onRequireActivation: (cb: () => void) => ipcRenderer.on('require-activation', cb),
-
-    onOAuthSuccess: (callback) => {
-      const wrapper = () => {
-        callback()
-        ipcRenderer.removeListener('oauth-success', wrapper)
-        ipcRenderer.removeListener('oauth-error', wrapper)
-      }
-
-      ipcRenderer.on('oauth-success', wrapper)
-    },
-
-    onOAuthError: (callback) => {
-      const wrapper = (_event: Electron.IpcRendererEvent, error: string) => {
-        callback(error)
-        ipcRenderer.removeListener('oauth-success', wrapper)
-        ipcRenderer.removeListener('oauth-error', wrapper)
-      }
-
-      ipcRenderer.on('oauth-error', wrapper)
-    },
-
-    activateApp(activationKey: string) {
-      return ipcRenderer.invoke('activate-app', activationKey);
-    },
-  }
-
-  contextBridge.exposeInMainWorld('api', api)
+function listenOnce<T>(channel: string, callback: (payload: T) => void, removeChannels: string[] = []) {
+  const wrapper = (_event: Electron.IpcRendererEvent, payload: T) => {
+    callback(payload);
+    ipcRenderer.removeAllListeners(channel);
+    removeChannels.forEach((ch) => ipcRenderer.removeAllListeners(ch));
+  };
+  ipcRenderer.on(channel, wrapper);
 }
 
-init()
+const keytarApi: KeytarApi = {
+  getPassword: (service, account) => ipcRenderer.invoke('keytar-get-password', service, account),
+  deletePassword: (service, account) => ipcRenderer.send('delete-password', service, account),
+};
 
+const oauthApi: OAuthApi = {
+  loginGitHub: () => ipcRenderer.send('login-github'),
+  onRequireActivation: (cb) => ipcRenderer.on('require-activation', cb),
+  onOAuthSuccess: (cb) => listenOnce('oauth-success', cb, ['oauth-error']),
+  onOAuthError: (cb) => listenOnce<GitHubTokenResponseBad>('oauth-error', cb, ['oauth-success']),
+};
 
+const activationApi: ActivationApi = {
+  activateApp: (key) => ipcRenderer.invoke('activate-app', key),
+};
 
+const api: ApiBridge = {
+  ...keytarApi,
+  ...oauthApi,
+  ...activationApi,
+};
+
+contextBridge.exposeInMainWorld('api', api);
