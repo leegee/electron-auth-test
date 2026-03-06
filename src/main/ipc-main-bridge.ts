@@ -66,8 +66,8 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
         }
     });
 
-    const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&redirect_uri=${encodeURIComponent(config.VITE_REDIRECT_URI)}&scope=read:user`;
-    console.log('oauthUrl', oauthUrl)
+    // const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&redirect_uri=${encodeURIComponent(config.VITE_REDIRECT_URI)}&scope=read:user`;
+    const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&scope=read:user`;
 
     oauthWindow.show();
     oauthWindow.focus();
