@@ -1,6 +1,6 @@
+// src\main\ipc-main-bridge.ts
 import { BrowserWindow, ipcMain } from 'electron';
 import keytar from 'keytar';
-import { config } from './config';
 import { startGithubOAuth, OAuthCallbacks } from './auth';
 
 export function initIpc(mainWindow: BrowserWindow) {
@@ -12,15 +12,7 @@ export function initIpc(mainWindow: BrowserWindow) {
         } as OAuthCallbacks)
     );
 
-    ipcMain.handle('keytar-delete-password', async () => {
-        return keytar.deletePassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN);
-    });
-
     ipcMain.handle('keytar-get-password', async (_event, service: string, account: string) => {
         return keytar.getPassword(service, account);
-    });
-
-    ipcMain.handle('keytar-set-password', async (_event, service: string, account: string, password: string) => {
-        return keytar.setPassword(service, account, password);
     });
 }

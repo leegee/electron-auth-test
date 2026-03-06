@@ -2,9 +2,6 @@ import path from 'node:path';
 
 import { app } from 'electron';
 
-import { config as dotenvConfig } from 'dotenv';
-
-
 /**
  * Get environment variable as string.
  * Throws if missing and no default provided.
@@ -19,8 +16,6 @@ export function getEnv(name: string, defaultValue?: string | boolean): string {
 
 // Determine environment
 const isPackaged = app.isPackaged;
-const envFile = isPackaged ? '.env.production' : '.env.development';
-dotenvConfig({ path: path.resolve(process.cwd(), envFile) });
 
 const secretFileName = getEnv('VITE_ACTIVATION_FILE_PATH', 'activation-key.json');
 const VITE_ACTIVATION_FILE_PATH = isPackaged
@@ -35,7 +30,6 @@ function normaliseBoolean(value?: string | boolean, defaultVal = false): boolean
 
 export const config = {
     isPackaged,
-    envFile,
     VITE_BUILD_PASSWORD: getEnv('VITE_BUILD_PASSWORD'),
     VITE_SHOW_DEV_TOOLS: normaliseBoolean(getEnv('VITE_SHOW_DEV_TOOLS', false)),
     VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),

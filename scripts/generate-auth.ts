@@ -10,6 +10,20 @@ const VITE_ACTIVATION_FILE_PATH = process.env.VITE_ACTIVATION_FILE_PATH || 'acti
 
 const outputPath = path.resolve(process.cwd(), VITE_ACTIVATION_FILE_PATH);
 
+console.log(`${process.argv[1]} NODE_ENV = ${process.env.NODE_ENV}`);
+console.log(`${process.argv[1]} VITE_CLIENT_ID = ${process.env.VITE_CLIENT_ID}`);
+console.log(`${process.argv[1]} VITE_INIT_CLIENT_SECRET = ${process.env.VITE_INIT_CLIENT_SECRET}`);
+
+if (!VITE_INIT_CLIENT_SECRET) {
+    console.error(`${process.argv[1]} CLIENT_SECRET missing from environment`);
+    process.exit(1);
+}
+
+if (!VITE_BUILD_PASSWORD) {
+    console.error(`${process.argv[1]} VITE_BUILD_PASSWORD missing from environment`);
+    process.exit(1);
+}
+
 if (process.env.CLEAN) {
     if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
@@ -41,17 +55,6 @@ if (process.env.CLEAN) {
     await keytar.deletePassword(VITE_SERVICE_NAME, VITE_SESSION_TOKEN);
 
     console.info(`${process.argv[1]} VITE_SESSION_TOKEN and VITE_ACCOUNT_ACTIVATION removed from ${VITE_SERVICE_NAME}`);
-}
-
-
-if (!VITE_INIT_CLIENT_SECRET) {
-    console.error(`${process.argv[1]} CLIENT_SECRET missing from environment`);
-    process.exit(1);
-}
-
-if (!VITE_BUILD_PASSWORD) {
-    console.error(`${process.argv[1]} VITE_BUILD_PASSWORD missing from environment`);
-    process.exit(1);
 }
 
 const activationKey = encryptSecret(VITE_INIT_CLIENT_SECRET, VITE_BUILD_PASSWORD);

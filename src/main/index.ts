@@ -1,12 +1,12 @@
+// src\main\index.ts
 import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron';
 import path from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
-import keytar from 'keytar';
 
 import icon from '../../resources/icon.png?asset';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
-import { decryptActivationKey, exchangeCodeForToken, OAuthCallbacks } from './auth';
+import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } },
@@ -25,9 +25,10 @@ app.whenReady().then(() => {
   initIpc(mainWindow);
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
+
     try {
-      const secret = decryptActivationKey(activationKey, config.VITE_BUILD_PASSWORD);
-      await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION, secret);
+      console.log('Received activate-app')
+      await storeActivationKey(activationKey)
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };

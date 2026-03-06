@@ -6,5 +6,4 @@ out
 *.log*
 .env.production
 .env.development
-activation-key.txt
-activation-key.json
+activation-key*

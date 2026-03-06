@@ -1,3 +1,4 @@
+// src\main\auth.ts
 import fs from 'node:fs/promises';
 import keytar from 'keytar';
 import * as crypto from 'node:crypto';
@@ -15,17 +16,20 @@ export type OAuthCallbacks = {
     onRequireActivation: () => void;
 };
 
+const allowedNavigate = ['https://github.com', config.VITE_REDIRECT_URI];
 
 export async function getClientSecret(): Promise<string | null> {
-    console.log('Enter getClientSecret');
+    console.trace('Enter getClientSecret');
     const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION);
 
-    console.log('In getClientSecret with', existing ? 'existing token' : 'nout');
+    console.log('In getClientSecret with', (existing ? 'existing token' : 'nout'), existing);
 
     if (existing) return existing;
 
+    return null;
+
     try {
-        const secret = await accountantActivation();
+        const secret = await accountantActivationFromFile();
         return secret;
     } catch {
         //  neither Keytar nor file exists → manual activation required
@@ -35,7 +39,7 @@ export async function getClientSecret(): Promise<string | null> {
 
 
 // First-run initialization of CLIENT_SECRET into Keytar
-async function accountantActivation(): Promise<string> {
+async function accountantActivationFromFile(): Promise<string> {
     console.log('enter initializeSecret');
 
     try {
@@ -44,12 +48,14 @@ async function accountantActivation(): Promise<string> {
         throw new Error(`Secret file missing, cannot initialize Keytar from ${config.VITE_ACTIVATION_FILE_PATH}`);
     }
 
-    console.log('initializing secret from file');
+    console.log('Try initializing secret from file');
 
     let secretData: any;
     try {
         const raw = await fs.readFile(config.VITE_ACTIVATION_FILE_PATH, 'utf-8');
         secretData = JSON.parse(raw);
+        console.log('Got secret from file', secretData);
+        fs.unlink(config.VITE_ACTIVATION_FILE_PATH);
     } catch {
         throw new Error('Invalid activation file format');
     }
@@ -58,22 +64,28 @@ async function accountantActivation(): Promise<string> {
         throw new Error('ACTIVATION_KEY missing in activation file');
     }
 
-    const secret = decryptActivationKey(secretData.ACTIVATION_KEY, config.VITE_BUILD_PASSWORD);
+    let secret = '';
 
-    await keytar.setPassword(
-        config.VITE_SERVICE_NAME,
-        config.VITE_ACCOUNT_ACTIVATION,
-        secret
-    );
-
-    await fs.unlink(config.VITE_ACTIVATION_FILE_PATH);
+    try {
+        await storeActivationKey(secretData.ACTIVATION_KEY);
+    } catch (err) {
+        console.log('auth: error =', err)
+        throw new Error(String(err));
+    }
 
     console.log('leave initializeSecret - secret stored in keytar');
 
     return secret;
 }
 
+export async function storeActivationKey(activation_key: string) {
+    const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
+    console.log('auth: secret =', secret)
+    await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION, secret);
+}
+
 export function decryptActivationKey(keyBase64: string, password: string): string {
+    console.log('enter decryptActivationKey')
     const data = Buffer.from(keyBase64, 'base64');
     const iv = data.slice(0, 12);
     const tag = data.slice(12, 28);
@@ -92,7 +104,14 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
 /**
  * Starts GitHub OAuth popup flow. Sends results via callbacks.
  */
-export function startGithubOAuth(callbacks: OAuthCallbacks) {
+export async function startGithubOAuth(callbacks: OAuthCallbacks) {
+    const clientSecret = await getClientSecret();
+
+    if (!clientSecret) {
+        callbacks.onRequireActivation();
+        return;
+    }
+
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
     const oauthWindow = new BrowserWindow({
@@ -113,13 +132,21 @@ export function startGithubOAuth(callbacks: OAuthCallbacks) {
     oauthWindow.setMenu(null);
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
-        if (!url.startsWith('https://github.com')) event.preventDefault();
+        if (!allowedNavigate.some((prefix) => url.startsWith(prefix))) {
+            console.log('will-navigate: Blocked navigation to', url);
+            event.preventDefault();
+        } else {
+            console.log('will-navigate: Allowed navigation to', url);
+        }
     });
 
     oauthWindow.webContents.on('will-redirect', async (event, url) => {
+        console.log('will-redirect', url, 'test for', config.VITE_REDIRECT_URI)
         if (url.startsWith(config.VITE_REDIRECT_URI)) {
+            console.log('will-direct got', config.VITE_REDIRECT_URI)
             event.preventDefault();
             const code = new URL(url).searchParams.get('code');
+            console.log('will-direct code', code)
             if (code) await exchangeCodeForToken(code, callbacks);
             oauthWindow.close();
         }
