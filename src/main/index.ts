@@ -1,125 +1,28 @@
-import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron'
-import path from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { app, shell, BrowserWindow, ipcMain, protocol } from 'electron';
+import path from 'path';
+import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import keytar from 'keytar';
 
-import icon from '../../resources/icon.png?asset'
+import icon from '../../resources/icon.png?asset';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
-import { decryptActivationKey, exchangeCodeForToken } from './auth';
-
-function createWindow(): void {
-  const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
-    show: false,
-    autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
-
-  const gotLock = app.requestSingleInstanceLock();
-  if (!gotLock) {
-    app.quit();
-  }
-  else {
-    app.on('second-instance', async (_event, argv) => {
-      const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
-      if (!urlArg) return;
-
-      const code = new URL(urlArg).searchParams.get('code');
-      if (!code) return;
-
-      await exchangeCodeForToken(code, {
-        onSuccess: () => mainWindow.webContents.send('oauth-success'),
-        onError: (err) => mainWindow.webContents.send('oauth-error', err),
-        onRequireActivation: () => mainWindow.webContents.send('require-activation'),
-      });
-
-      mainWindow?.focus();
-    });
-  }
-
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
-
-  initIpc(mainWindow);
-
-  if (config.VITE_SHOW_DEV_TOOLS) {
-    mainWindow.webContents.openDevTools();
-  }
-
-  mainWindow.setMenu(null);
-
-  // xxx
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  // HMR for renderer base on electron-vite cli.
-  // Load the remote URL for development or the local html file for production.
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
-  }
-}
-
+import { decryptActivationKey, exchangeCodeForToken, OAuthCallbacks } from './auth';
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } }
+  { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } },
 ]);
 
-
-
-app.on('before-quit', () => {
-  console.log('App quitting...');
-});
-
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
+// Main entry
 app.whenReady().then(() => {
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.electron');
 
-  if (config.isPackaged) {
-    try {
-      if (!app.isDefaultProtocolClient(config.VITE_CUSTOM_URL_PROTOCOL)) {
-        console.log('Set as default protocol handler for', config.VITE_CUSTOM_URL_PROTOCOL);
-        app.setAsDefaultProtocolClient(config.VITE_CUSTOM_URL_PROTOCOL);
-      }
-    } catch (err) {
-      throw new Error(`Failed to setAsDefaultProtocolClient "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol ${(err as Error).toString()}`);
-    }
-  }
+  const mainWindow = createWindow();
 
-  try {
-    protocol.registerFileProtocol(config.VITE_CUSTOM_URL_PROTOCOL, (request, callback) => {
-      const urlPath = request.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
-      // Adjust path for packaged vs dev if needed
-      const filePath = path.join(app.getAppPath(), 'dist', 'renderer', urlPath);
-      console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
-      callback({ path: filePath });
-    });
-  } catch (err) {
-    console.error(`Failed to register "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol`, err);
-  }
+  if (!handleSecondInstance(mainWindow)) return;
 
-  // Default open or close DevTools by F12 in development
-  // and ignore CommandOrControl + R in production.
-  // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+  registerCustomProtocol();
 
-  // ipcMain.on('ping', () => console.log('pong'))
+  initIpc(mainWindow);
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
@@ -131,16 +34,107 @@ app.whenReady().then(() => {
     }
   });
 
-  createWindow()
+  // macOS window re-activation
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+  if (config.VITE_SHOW_DEV_TOOLS) app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window));
+});
 
-// Quit when all windows are closed, except on macOS, where it is common for applications and their menu bar to stay active until the user quits explicitly with Cmd + Q.
+// Quit when all windows closed except macOS
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+  if (process.platform !== 'darwin') app.quit();
+});
 
+app.on('before-quit', () => console.log('App quitting...'));
+
+
+/* *************** Functions *************** */
+
+
+function getMainWindowOptions() {
+  return {
+    width: 900,
+    height: 670,
+    show: false,
+    autoHideMenuBar: true,
+    ...(process.platform === 'linux' ? { icon } : {}),
+    webPreferences: {
+      preload: path.join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  };
+}
+
+
+// Load renderer content (HMR in dev, local html in prod)
+function loadMainWindow(mainWindow: BrowserWindow) {
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  }
+}
+
+
+function createWindow(): BrowserWindow {
+  const mainWindow = new BrowserWindow(getMainWindowOptions());
+
+  mainWindow.on('ready-to-show', () => mainWindow.show());
+  mainWindow.setMenu(null);
+
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
+    return { action: 'deny' };
+  });
+
+  if (config.VITE_SHOW_DEV_TOOLS) mainWindow.webContents.openDevTools();
+
+  loadMainWindow(mainWindow);
+  return mainWindow;
+}
+
+
+// Register custom protocol for deep links
+function registerCustomProtocol() {
+  try {
+    protocol.registerFileProtocol(config.VITE_CUSTOM_URL_PROTOCOL, (request, callback) => {
+      const urlPath = request.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
+      const filePath = path.join(app.getAppPath(), 'dist', 'renderer', urlPath);
+      console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
+      callback({ path: filePath });
+    });
+  } catch (err) {
+    console.error(`Failed to register "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol`, err);
+  }
+}
+
+
+// Deep links (Windows/Linux)
+function handleSecondInstance(mainWindow: BrowserWindow) {
+  const gotLock = app.requestSingleInstanceLock();
+  if (!gotLock) {
+    app.quit();
+    return false;
+  }
+
+  app.on('second-instance', async (_event, argv) => {
+    const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
+    if (!urlArg) return;
+
+    const code = new URL(urlArg).searchParams.get('code');
+    if (!code) return;
+
+    const callbacks: OAuthCallbacks = {
+      onSuccess: () => mainWindow.webContents.send('oauth-success'),
+      onError: (err) => mainWindow.webContents.send('oauth-error', err),
+      onRequireActivation: () => mainWindow.webContents.send('require-activation'),
+    };
+
+    await exchangeCodeForToken(code, callbacks);
+    mainWindow.focus();
+  });
+
+  return true;
+}
