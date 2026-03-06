@@ -18,7 +18,7 @@
     "prebuild": "bun generate-auth && taskkill /IM electron-secure-test.exe /F 2>NUL || exit 0",
     "build": "bun run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "dotenv -e .env.development -- bun run build && electron-builder --dir",
+    "build:unpack": "dotenv -e .env.production -- bun run build && electron-builder --dir",
     "build:win": "dotenv -e .env.production -- bun run build && electron-builder --win",
     "build:mac": "dotenv -e .env.production -- electron-vite build && electron-builder --mac",
     "build:linux": "dotenv -e .env.production -- electron-vite build && electron-builder --linux"
