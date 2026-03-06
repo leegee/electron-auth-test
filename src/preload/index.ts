@@ -2,8 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { ApiBridge } from '../shared/bridge-types'
 
 async function init() {
-  const CONFIG = await ipcRenderer.invoke('get-config')
-
   const api: ApiBridge = {
     loginGitHub: () => {
       ipcRenderer.send('login-github')
@@ -42,8 +40,6 @@ async function init() {
     activateApp(activationKey: string) {
       return ipcRenderer.invoke('activate-app', activationKey);
     },
-
-    config: CONFIG,
   }
 
   contextBridge.exposeInMainWorld('api', api)

@@ -1,5 +1,6 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
+import { type GitHubTokenResponseBad } from '@shared/github-types';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 
@@ -16,7 +17,7 @@ export function AuthProvider(props): JSX.Element {
         setLoading(true);
         try {
             // Check if activation secret exists in Keytar
-            const clientSecret = await api.getPassword(api.config.VITE_SERVICE_NAME, api.config.VITE_ACCOUNT_ACTIVATION);
+            const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
 
             if (clientSecret !== null) {
                 // Already activated so start GitHub OAuth
@@ -39,8 +40,28 @@ export function AuthProvider(props): JSX.Element {
                 showToast('Login successful!', 'success', 3000);
             });
 
-            api.onOAuthError((msg: string) => {
-                showToast('Login failed: ' + msg, 'error', 5000);
+            api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
+                console.log('OAuth error received:', errorMsg);
+                alert(errorMsg.error_description)
+
+                switch (errorMsg.error) {
+                    case 'incorrect_client_credentials':
+                        alert(1)
+                        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
+                        setShowActivationModal(true);
+                        break;
+
+                    case 'access_denied':
+                        alert(2)
+                        showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
+                        break;
+
+                    default:
+                        alert(3)
+                        showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
+                        api.loginGitHub();
+                        break;
+                }
             });
 
             api.onRequireActivation(() => {
@@ -50,10 +71,11 @@ export function AuthProvider(props): JSX.Element {
             oauthListenerAttached = true;
         }
 
-        // attempt login on mount
+        // Login on mount
         login();
     });
 
+    // Guard children 
     return (
         <AuthContext.Provider value={{ authorised, loading, login }}>
             <Switch>

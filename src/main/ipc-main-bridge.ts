@@ -1,20 +1,9 @@
 import { BrowserWindow, ipcMain, session } from 'electron';
 import keytar from 'keytar';
 
+import { GitHubTokenResponseGood, GitHubTokenResponseBad } from '../shared/github-types';
 import { config } from './config';
 import { getClientSecret } from './auth';
-
-interface GitHubTokenResponseGood {
-    access_token: string;
-    scope?: string;
-    token_type?: string;
-}
-
-export interface GitHubTokenResponseBad {
-    error?: string;
-    error_description?: string;
-    error_url?: string;
-}
 
 type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad
 
@@ -35,7 +24,7 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
     const oauthWindow = new BrowserWindow({
-        width: 500,
+        width: config.VITE_SHOW_DEV_TOOLS ? 600 : 500,
         height: 600,
         alwaysOnTop: true,
         focusable: true,
@@ -43,22 +32,24 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
             sandbox: true,
             backgroundThrottling: false,
             contextIsolation: true,
-            devTools: false,
+            devTools: config.VITE_SHOW_DEV_TOOLS,
             nodeIntegration: false,
             session: ses,
         }
     });
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
-        console.log('oauth window navigating to', url)
+        console.log('oauth window will-navigate to', url)
         if (!url.startsWith('https://github.com')) event.preventDefault();
     });
 
     oauthWindow.setMenu(null);
 
     oauthWindow.webContents.on('will-redirect', async (event, url) => {
-        console.log('oauth window navigating to', url)
+        console.log('oauth window will-redirect to', url)
+        console.log('oauth window comparing  to', config.VITE_REDIRECT_URI)
         if (url.startsWith(config.VITE_REDIRECT_URI)) {
+            console.log('oauth window captured URL')
             event.preventDefault();
             const code = new URL(url).searchParams.get('code');
             if (code) await exchangeCodeForToken(mainWindow, code);
@@ -66,7 +57,6 @@ function startGithubOAuth(mainWindow: BrowserWindow) {
         }
     });
 
-    // const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&redirect_uri=${encodeURIComponent(config.VITE_REDIRECT_URI)}&scope=read:user`;
     const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&scope=read:user`;
 
     oauthWindow.show();
@@ -112,8 +102,9 @@ export async function exchangeCodeForToken(mainWindow: BrowserWindow, code: stri
             console.log("Token stored securely in Keytar.");
             mainWindow?.webContents.send('oauth-success');
         } else {
-            console.error("Failed to get access token from response:", tokenData);
-            mainWindow?.webContents.send('oauth-error', (tokenData as GitHubTokenResponseBad).error_description);
+            const errorRes = tokenData as GitHubTokenResponseBad;
+            console.error("ipc-main-bridge: Failed to get access token from response:", errorRes);
+            mainWindow?.webContents.send('oauth-error', errorRes);
         }
     } catch (err) {
         console.error("Error exchanging code for token:", err);

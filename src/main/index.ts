@@ -12,7 +12,6 @@ import { decryptActivationKey } from './auth';
 let devServer: ReturnType<typeof startDevHttpServer> | null = null;
 
 function createWindow(): void {
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
@@ -124,16 +123,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  ipcMain.on('ping', () => console.log('pong'))
-
-  ipcMain.handle('get-config', () => {
-    return {
-      VITE_CUSTOM_URL_PROTOCOL: config.VITE_CUSTOM_URL_PROTOCOL,
-      VITE_ACCOUNT_ACTIVATION: config.VITE_ACCOUNT_ACTIVATION,
-      VITE_SESSION_TOKEN: config.VITE_SESSION_TOKEN,
-      VITE_SERVICE_NAME: config.VITE_SERVICE_NAME,
-    }
-  })
+  // ipcMain.on('ping', () => console.log('pong'))
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
