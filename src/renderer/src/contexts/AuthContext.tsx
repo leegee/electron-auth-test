@@ -1,6 +1,8 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
+
 import { type GitHubTokenResponseBad } from '@shared/github-types';
+import log from '@shared/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 
@@ -14,7 +16,7 @@ export function AuthProvider(props): JSX.Element {
     let oauthListenerAttached = false;
 
     const logout = async () => {
-        console.log('logout')
+        log.log('logout')
         await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_SESSION_TOKEN);
         setAuthorised(false);
     }
@@ -24,7 +26,7 @@ export function AuthProvider(props): JSX.Element {
         try {
             // Check if activation secret exists in Keytar
             const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
-            console.log('got client secret')
+            log.log('got client secret')
 
             if (clientSecret !== null) {
                 // Already activated so start GitHub OAuth
@@ -48,7 +50,7 @@ export function AuthProvider(props): JSX.Element {
             });
 
             api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
-                console.log('OAuth error received:', errorMsg);
+                log.log('OAuth error received:', errorMsg);
 
                 switch (errorMsg.error) {
                     case 'incorrect_client_credentials':

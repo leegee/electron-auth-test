@@ -5,6 +5,7 @@ import path from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import icon from '../../resources/icon.png?asset';
+import log from '@shared/logger';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
 import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
@@ -33,7 +34,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
-      console.log('Received activate-app')
+      log.log('Received activate-app')
       await storeActivationKey(activationKey)
       return { success: true };
     } catch (err) {
@@ -54,7 +55,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('before-quit', () => console.log('App quitting...'));
+app.on('before-quit', () => log.log('App quitting...'));
 
 
 /* *************** Functions *************** */

@@ -1,14 +1,11 @@
-// src/main/auto-updates.ts
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import log from 'electron-log';
+import log from '@shared/logger';
 
-// %USERPROFILE%\AppData\Roaming\<app-name>\logs\main.log
 autoUpdater.logger = log;
-log.transports.file.level = 'info';
 
 export function initAutoUpdates(mainWindow: BrowserWindow) {
-    autoUpdater.autoDownload = false; // don't auto-download unless you want
+    autoUpdater.autoDownload = false;
 
     autoUpdater.on('checking-for-update', () => {
         log.info('Checking for updates...');

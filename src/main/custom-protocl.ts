@@ -4,11 +4,9 @@ import fs from 'node:fs';
 
 import mime from 'mime';
 import { app, net, protocol } from 'electron';
-import log from 'electron-log';
 
+import log from '@shared/logger';
 import { config } from './config';
-
-log.transports.file.level = 'info';
 
 
 function _nodeStreamToWebStream(nodeStream: fs.ReadStream): ReadableStream<Uint8Array> {
@@ -77,7 +75,7 @@ function register() {
                 return net.fetch(url.pathToFileURL(path.join(base, 'index.html')).toString());
             }
 
-            console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}://  ${filePath}`)
+            log.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}://  ${filePath}`)
 
             // return net.fetch(url.pathToFileURL(filePath).toString());
             const contentType = mime.getType(filePath) || 'application/octet-stream';
@@ -89,7 +87,7 @@ function register() {
         }
 
         catch (err) {
-            console.error(`Failed to serve "${req.url}"`, err)
+            log.error(`Failed to serve "${req.url}"`, err)
             return new Response('Internal error', {
                 status: 500,
                 headers: { 'content-type': 'text/plain' }

@@ -4,9 +4,9 @@ import keytar from 'keytar';
 
 import { BrowserWindow, session } from 'electron';
 
-import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '../shared/github-types';
 import { config } from './config';
-import log from 'electron-log';
+import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '@shared/github-types';
+import log from '@shared/logger';
 
 export type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad;
 
