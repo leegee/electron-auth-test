@@ -1,7 +1,7 @@
 // src\main\index.ts
-import { app, BrowserWindow, ipcMain, net, protocol, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
-import url from 'node:url';
+
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import icon from '../../resources/icon.png?asset';
@@ -9,23 +9,27 @@ import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
 import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
 import { initAutoUpdates } from './auto-updates';
+import { enableRendererDependencyLogging, enableRequestLogging } from './log-requests';
+import customProtocol from './custom-protocl';
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: config.VITE_CUSTOM_URL_PROTOCOL, privileges: { standard: true, secure: true } },
-]);
+customProtocol.init();
 
 // Main entry
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
 
-
   const mainWindow = createWindow();
 
   if (!handleSecondInstance(mainWindow)) return;
 
-  registerCustomProtocol();
+  customProtocol.register();
   initIpc(mainWindow);
   initAutoUpdates(mainWindow)
+
+  if (config.VITE_SHOW_DEV_TOOLS) {
+    enableRequestLogging(mainWindow);
+    enableRendererDependencyLogging();
+  }
 
   ipcMain.handle('activate-app', async (_event, activationKey: string) => {
     try {
@@ -96,56 +100,6 @@ function createWindow(): BrowserWindow {
 
   loadMainWindow(mainWindow);
   return mainWindow;
-}
-
-
-// Register custom protocol for deep links
-function registerCustomProtocol() {
-  // try {
-  //   protocol.registerFileProtocol(config.VITE_CUSTOM_URL_PROTOCOL, (request, callback) => {
-  //     const urlPath = request.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
-  //     const filePath = path.join(app.getAppPath(), 'dist', 'renderer', urlPath);
-  //     console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
-  //     callback({ path: filePath });
-  //   });
-  // } catch (err) {
-  //   console.error(`Failed to register "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol`, err);
-  // }
-  protocol.handle(config.VITE_CUSTOM_URL_PROTOCOL, (req: GlobalRequest) => {
-    try {
-      // let urlPath = req.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
-
-      const { pathname } = new URL(req.url);
-      let urlPath = decodeURIComponent(pathname);
-
-      if (!urlPath || urlPath === '/') {
-        urlPath = 'index.html';
-      }
-
-      const base = path.join(app.getAppPath(), 'dist', 'renderer');
-      const filePath = path.resolve(base, '.' + urlPath);
-
-      // Prevent directory traversal
-      if (!filePath.startsWith(base)) {
-        return new Response('Forbidden', { status: 403 });
-      }
-
-      if (!path.extname(filePath)) {
-        return net.fetch(url.pathToFileURL(path.join(base, 'index.html')).toString());
-      }
-
-      console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}://  ${filePath}`)
-      return net.fetch(url.pathToFileURL(filePath).toString());
-    }
-
-    catch (err) {
-      console.error(`Failed to serve "${req.url}"`, err)
-      return new Response('Internal error', {
-        status: 500,
-        headers: { 'content-type': 'text/plain' }
-      });
-    }
-  })
 }
 
 
