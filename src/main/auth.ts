@@ -4,7 +4,7 @@ import keytar from 'keytar';
 
 import { BrowserWindow, session } from 'electron';
 
-import { config } from './config';
+import { config, OAUTH_CONFIG } from './config';
 import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '@shared/github-types';
 import log from '@shared/logger';
 
@@ -174,8 +174,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         return { action: 'deny' };
     });
 
-    // Load GitHub OAuth URL
-    const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&scope=read:user`;
+    const oauthUrl = OAUTH_CONFIG.github.authUrl + config.VITE_CLIENT_ID;
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
@@ -192,7 +191,8 @@ export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbac
 
     try {
         log.log('exchangeCodeForToken: trying to get token')
-        const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        // 'https://github.com/login/oauth/access_token'
+        const tokenResponse = await fetch(OAUTH_CONFIG.github.tokenUrl, {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({
