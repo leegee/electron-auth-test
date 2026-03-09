@@ -2,26 +2,20 @@ import { contextBridge, ipcRenderer } from 'electron';
 import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
 import type { GitHubTokenResponseBad } from '../shared/github-types';
 import '@shared/logger'; // Required
-
-function listenOnce<T>(channel: string, callback: (payload: T) => void, removeChannels: string[] = []) {
-  const wrapper = (_event: Electron.IpcRendererEvent, payload: T) => {
-    callback(payload);
-    ipcRenderer.removeAllListeners(channel);
-    removeChannels.forEach((ch) => ipcRenderer.removeAllListeners(ch));
-  };
-  ipcRenderer.on(channel, wrapper);
-}
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 const keytarApi: KeytarApi = {
   getPassword: (service, account) => ipcRenderer.invoke('keytar-get-password', service, account),
   deletePassword: (service, account) => ipcRenderer.send('delete-password', service, account),
 };
 
+// No need to return unsubscribed functions afaict
 const oauthApi: OAuthApi = {
-  oauthLogin: () => ipcRenderer.send('oauth-login'),
+  oauthLogin: (provider: keyof typeof OAUTH_PROVIDERS) => ipcRenderer.send('oauth-login', provider),
   onRequireActivation: (cb) => ipcRenderer.on('require-activation', cb),
-  onOAuthSuccess: (cb) => listenOnce('oauth-success', cb, ['oauth-error']),
-  onOAuthError: (cb) => listenOnce<GitHubTokenResponseBad>('oauth-error', cb, ['oauth-success']),
+  onOAuthSuccess: (cb: () => void) => ipcRenderer.on('oauth-success', () => cb()),
+  onOAuthError: (cb: (payload: GitHubTokenResponseBad) => void) =>
+    ipcRenderer.on('oauth-error', (_event, payload: GitHubTokenResponseBad) => cb(payload)),
 };
 
 const activationApi: ActivationApi = {
