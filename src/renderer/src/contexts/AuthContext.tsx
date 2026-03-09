@@ -6,7 +6,15 @@ import log from '@shared/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 
-const AuthContext = createContext<any>();
+type AuthContextType = {
+    authorised: () => boolean
+    loading: () => boolean
+    selectedProvider: () => 'github' | 'google'
+    login: (provider: 'github' | 'google') => Promise<void>
+    logout: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType>()
 
 export function AuthProvider(props): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false);
@@ -14,7 +22,36 @@ export function AuthProvider(props): JSX.Element {
     const [showActivationModal, setShowActivationModal] = createSignal(false);
     const [selectedProvider, setSelectedProvider] = createSignal<'github' | 'google'>('github');
 
-    let oauthListenerAttached = false;
+    api.onOAuthSuccess(() => {
+        setAuthorised(true);
+        setLoading(false);
+        showToast('Login successful!', 'success', 3000);
+    });
+
+    api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
+        log.log('OAuth error received:', errorMsg);
+        setLoading(false);
+
+        switch (errorMsg.error) {
+            case 'incorrect_client_credentials':
+                await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
+                setShowActivationModal(true);
+                break;
+
+            case 'access_denied':
+                showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
+                break;
+
+            default:
+                showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
+                api.oauthLogin(selectedProvider());
+                break;
+        }
+    });
+
+    api.onRequireActivation(() => {
+        setShowActivationModal(true);
+    });
 
     const logout = async () => {
         log.log('logout')
@@ -30,60 +67,31 @@ export function AuthProvider(props): JSX.Element {
             const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
             log.log('got client secret')
 
+            // Already activated so start OAuth flow
             if (clientSecret !== null) {
-                // Already activated so start OAuth flow
-                if (!provider) {
-                    throw new Error('No provider')
-                }
+                if (!provider) throw new Error('No provider')
+
                 setSelectedProvider(provider);
-                await api.oauthLogin(selectedProvider());
-            } else {
-                // Not activated so show activation modal
-                setShowActivationModal(true);
+                await api.oauthLogin(provider);
+                setLoading(false);
             }
-        } catch (err) {
+
+            // Not activated so show activation modal
+            else {
+                setShowActivationModal(true);
+                setLoading(false);
+            }
+        }
+
+        catch (err) {
             showToast('Login failed: ' + err, 'error');
-        } finally {
             setLoading(false);
         }
     };
 
     onMount(() => {
-        if (!oauthListenerAttached) {
-            api.onOAuthSuccess(() => {
-                setAuthorised(true);
-                showToast('Login successful!', 'success', 3000);
-            });
-
-            api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
-                log.log('OAuth error received:', errorMsg);
-
-                switch (errorMsg.error) {
-                    case 'incorrect_client_credentials':
-                        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
-                        setShowActivationModal(true);
-                        break;
-
-                    case 'access_denied':
-                        showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                        break;
-
-                    default:
-                        showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                        api.oauthLogin(selectedProvider());
-                        break;
-                }
-            });
-
-            api.onRequireActivation(() => {
-                setShowActivationModal(true);
-            });
-
-            oauthListenerAttached = true;
-        }
-
         // Login on mount
-        login(selectedProvider());
+        // login(selectedProvider());
     });
 
     // Guard children 
@@ -95,6 +103,7 @@ export function AuthProvider(props): JSX.Element {
                         onSuccess={async () => {
                             setShowActivationModal(false);
                             await api.oauthLogin(selectedProvider());
+                            setLoading(false);
                         }}
                     />
                 </Match>

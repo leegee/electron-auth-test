@@ -1,6 +1,7 @@
 import path from 'node:path';
 
 import { app } from 'electron';
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 /**
  * Get environment variable as string.
@@ -42,7 +43,9 @@ export const config = {
     DEV_VITE_REDIRECT_URI: 'http://localhost:3000/callback',
     VITE_REDIRECT_URI: isPackaged
         ? `${getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
-        : 'http://localhost:3000/callback'
+        : 'http://localhost:3000/callback',
+
+    getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => getEnv('VITE_' + provider.toUpperCase() + '_CLIENT_ID')
 } as const;
 
 
