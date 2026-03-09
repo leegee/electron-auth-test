@@ -84,7 +84,6 @@ async function accountantActivationFromFile(): Promise<string> {
     return secret;
 }
 
-
 export async function storeActivationKey(activation_key: string) {
     const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
     log.log('auth: secret =', secret)
