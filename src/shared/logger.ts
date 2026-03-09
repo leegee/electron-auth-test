@@ -1,6 +1,6 @@
 import log from 'electron-log';
 
-if (process.type === 'browser') {
+if (typeof process !== 'undefined' && (process as any).type === 'browser') {
     const fs = require('fs');
 
     const logFile = log.transports.file.getFile().path;
@@ -10,9 +10,10 @@ if (process.type === 'browser') {
     } catch (err) {
         console.warn('Failed to clear log file:', err);
     }
+
+    log.transports.file.level = 'warn';
 }
 
-log.transports.file.level = 'warn';
 log.transports.console.level = 'debug';
 
 export default log;
