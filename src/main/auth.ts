@@ -6,6 +6,7 @@ import { BrowserWindow, session } from 'electron';
 
 import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '../shared/github-types';
 import { config } from './config';
+import log from 'electron-log';
 
 export type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad;
 
@@ -16,6 +17,8 @@ export type OAuthCallbacks = {
 };
 
 
+log.transports.file.level = 'info';
+
 const ALLOWED_URLS = ['https://github.com', config.VITE_REDIRECT_URI];
 
 
@@ -23,7 +26,7 @@ export async function getClientSecret(): Promise<string | null> {
     console.trace('Enter getClientSecret');
     const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION);
 
-    console.log('In getClientSecret with', (existing ? 'existing token' : 'nout'), existing);
+    log.log('In getClientSecret with', (existing ? 'existing token' : 'nout'), existing);
 
     if (existing) return existing;
 
@@ -43,7 +46,7 @@ export async function getClientSecret(): Promise<string | null> {
 
 // First-run initialization of CLIENT_SECRET into Keytar
 async function accountantActivationFromFile(): Promise<string> {
-    console.log('enter initializeSecret');
+    log.log('enter initializeSecret');
 
     try {
         await fs.access(config.VITE_ACTIVATION_FILE_PATH);
@@ -51,13 +54,13 @@ async function accountantActivationFromFile(): Promise<string> {
         throw new Error(`Secret file missing, cannot initialize Keytar from ${config.VITE_ACTIVATION_FILE_PATH}`);
     }
 
-    console.log('Try initializing secret from file');
+    log.log('Try initializing secret from file');
 
     let secretData: any;
     try {
         const raw = await fs.readFile(config.VITE_ACTIVATION_FILE_PATH, 'utf-8');
         secretData = JSON.parse(raw);
-        console.log('Got secret from file', secretData);
+        log.log('Got secret from file', secretData);
         fs.unlink(config.VITE_ACTIVATION_FILE_PATH);
     } catch {
         throw new Error('Invalid activation file format');
@@ -72,11 +75,11 @@ async function accountantActivationFromFile(): Promise<string> {
     try {
         await storeActivationKey(secretData.ACTIVATION_KEY);
     } catch (err) {
-        console.log('auth: error =', err)
+        log.log('auth: error =', err)
         throw new Error(String(err));
     }
 
-    console.log('leave initializeSecret - secret stored in keytar');
+    log.log('leave initializeSecret - secret stored in keytar');
 
     return secret;
 }
@@ -84,12 +87,12 @@ async function accountantActivationFromFile(): Promise<string> {
 
 export async function storeActivationKey(activation_key: string) {
     const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
-    console.log('auth: secret =', secret)
+    log.log('auth: secret =', secret)
     await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION, secret);
 }
 
 export function decryptActivationKey(keyBase64: string, password: string): string {
-    console.log('enter decryptActivationKey')
+    log.log('enter decryptActivationKey')
     const data = Buffer.from(keyBase64, 'base64');
     const iv = data.slice(0, 12);
     const tag = data.slice(12, 28);
@@ -146,7 +149,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
         if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
-            console.log('Blocked navigation to', url);
+            log.log('Blocked navigation to', url);
             event.preventDefault();
         } else {
             handleOAuthCallback(url);
@@ -155,7 +158,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
 
     oauthWindow.webContents.on('will-redirect', (event, url) => {
         if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
-            console.log('Blocked redirect to', url);
+            log.log('Blocked redirect to', url);
             event.preventDefault();
         } else {
             handleOAuthCallback(url);
@@ -166,7 +169,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         if (ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
             handleOAuthCallback(url);
         } else {
-            console.log('Blocked new window to', url);
+            log.log('Blocked new window to', url);
         }
         return { action: 'deny' };
     });
@@ -182,13 +185,13 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
 export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbacks) {
     const clientSecret = await getClientSecret();
     if (!clientSecret) {
-        console.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
+        log.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
         callbacks.onRequireActivation();
         return;
     }
 
     try {
-        console.log('exchangeCodeForToken: trying to get token')
+        log.log('exchangeCodeForToken: trying to get token')
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
@@ -204,15 +207,15 @@ export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbac
         const accessToken = (tokenData as GitHubTokenResponseGood).access_token;
 
         if (accessToken) {
-            console.log('exchangeCodeForToken: got token')
+            log.log('exchangeCodeForToken: got token')
             await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN, accessToken);
             callbacks.onSuccess();
         } else {
-            console.log('exchangeCodeForToken: failed to get token', tokenData)
+            log.log('exchangeCodeForToken: failed to get token', tokenData)
             callbacks.onError(tokenData as GitHubTokenResponseBad);
         }
     } catch (err) {
-        console.error('exchangeCodeForToken: error exchanging code for token:', err);
+        log.error('exchangeCodeForToken: error exchanging code for token:', err);
         const errorRes: GitHubTokenResponseBad = {
             error: 'network_error',
             error_description: (err as Error).message,
