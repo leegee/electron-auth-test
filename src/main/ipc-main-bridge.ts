@@ -4,7 +4,7 @@ import keytar from 'keytar';
 import { startOauth, OAuthCallbacks } from './auth';
 
 export function initIpc(mainWindow: BrowserWindow) {
-    ipcMain.on('login-github', () =>
+    ipcMain.on('oauth-login', () =>
         startOauth(
             'github',
             {
