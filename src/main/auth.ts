@@ -173,7 +173,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         return { action: 'deny' };
     });
 
-    const oauthUrl = OAUTH_CONFIG.github.authUrl + config.VITE_CLIENT_ID;
+    const oauthUrl = OAUTH_CONFIG.github.authUrl + config.VITE_GITHUB_CLIENT_ID;
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
@@ -195,7 +195,7 @@ export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbac
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({
-                client_id: config.VITE_CLIENT_ID,
+                client_id: config.VITE_GITHUB_CLIENT_ID,
                 client_secret: clientSecret,
                 code,
                 redirect_uri: config.VITE_REDIRECT_URI,

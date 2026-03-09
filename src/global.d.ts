@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
     readonly VITE_VITE_BUILD_PASSWORD: string
-    readonly VITE_VITE_CLIENT_ID: string
+    readonly VITE_VITE_GITHUB_CLIENT_ID: string
 }
 
 interface ImportMeta {

@@ -11,7 +11,7 @@ const VITE_ACTIVATION_FILE_PATH = process.env.VITE_ACTIVATION_FILE_PATH || 'acti
 const outputPath = path.resolve(process.cwd(), VITE_ACTIVATION_FILE_PATH);
 
 console.log(`${process.argv[1]} NODE_ENV = ${process.env.NODE_ENV}`);
-console.log(`${process.argv[1]} VITE_CLIENT_ID = ${process.env.VITE_CLIENT_ID}`);
+console.log(`${process.argv[1]} VITE_GITHUB_CLIENT_ID = ${process.env.VITE_GITHUB_CLIENT_ID}`);
 console.log(`${process.argv[1]} VITE_INIT_CLIENT_SECRET = ${process.env.VITE_INIT_CLIENT_SECRET}`);
 
 if (!VITE_INIT_CLIENT_SECRET) {

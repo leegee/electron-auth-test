@@ -34,7 +34,7 @@ export const config = {
     VITE_DEV_MODE: normaliseBoolean(getEnv('VITE_DEV_MODE', false)),
     VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
     VITE_CACHE_USER_SESSIONS: normaliseBoolean(getEnv('VITE_CACHE_USER_SESSIONS', false)),
-    VITE_CLIENT_ID: getEnv('VITE_CLIENT_ID'),
+    VITE_GITHUB_CLIENT_ID: getEnv('VITE_GITHUB_CLIENT_ID'),
     VITE_ACTIVATION_FILE_PATH,
     VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electron-github-oauth'),
     VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'github-token'),
