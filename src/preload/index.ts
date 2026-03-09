@@ -17,7 +17,7 @@ const keytarApi: KeytarApi = {
 };
 
 const oauthApi: OAuthApi = {
-  loginGitHub: () => ipcRenderer.send('oauth-login'),
+  oauthLogin: () => ipcRenderer.send('oauth-login'),
   onRequireActivation: (cb) => ipcRenderer.on('require-activation', cb),
   onOAuthSuccess: (cb) => listenOnce('oauth-success', cb, ['oauth-error']),
   onOAuthError: (cb) => listenOnce<GitHubTokenResponseBad>('oauth-error', cb, ['oauth-success']),

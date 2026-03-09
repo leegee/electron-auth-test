@@ -30,7 +30,7 @@ export function AuthProvider(props): JSX.Element {
 
             if (clientSecret !== null) {
                 // Already activated so start GitHub OAuth
-                await api.loginGitHub();
+                await api.oauthLogin();
             } else {
                 // Not activated so show activation modal
                 setShowActivationModal(true);
@@ -64,7 +64,7 @@ export function AuthProvider(props): JSX.Element {
 
                     default:
                         showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                        api.loginGitHub();
+                        api.oauthLogin();
                         break;
                 }
             });
@@ -88,7 +88,7 @@ export function AuthProvider(props): JSX.Element {
                     <ActivationModal
                         onSuccess={async () => {
                             setShowActivationModal(false);
-                            await api.loginGitHub();
+                            await api.oauthLogin();
                         }}
                     />
                 </Match>
