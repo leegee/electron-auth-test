@@ -18,7 +18,9 @@ export default function App(): JSX.Element {
 
       <AuthProvider>
         <nav class="top">
-          <AuthButton />
+          <div class="max row right-align">
+            <AuthButton />
+          </div>
         </nav>
 
         <main class="responsive">
