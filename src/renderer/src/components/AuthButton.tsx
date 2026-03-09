@@ -17,14 +17,14 @@ export default function AuthButton() {
             >
                 <img src={OAUTH_PROVIDERS[auth.selectedProvider()].icon} width={24} height={24} alt={OAUTH_PROVIDERS[auth.selectedProvider()].name + ' logo'} />
                 <span>
-                    Log out of
+                    Sign out of
                     {' '}
                     {OAUTH_PROVIDERS[auth.selectedProvider()].name}
                 </span>
             </button>
         }>
             <div>
-                <button aria-label="Log in"
+                <button aria-label="Sign in optinos"
                     class="circle extend"
                     onClick={(e) => {
                         e.preventDefault()
@@ -34,7 +34,7 @@ export default function AuthButton() {
                 >
                     <i>login</i>
                     <span>
-                        {auth.loading() ? 'Logging in ...' : 'Log In'}
+                        {auth.loading() ? 'Signing in ...' : 'Sign In'}
                     </span>
                 </button>
 
@@ -43,6 +43,7 @@ export default function AuthButton() {
                         {(provider: string) => (
                             <li>
                                 <button
+                                    aria-label={"Sign in with " + OAUTH_PROVIDERS[provider].name}
                                     class="fill"
                                     onClick={() => {
                                         setFabOpen(false);
@@ -50,7 +51,7 @@ export default function AuthButton() {
                                     }}
                                 >
                                     <img src={OAUTH_PROVIDERS[provider].icon} width={24} height={24} alt={`${OAUTH_PROVIDERS[provider].name} logo`} />
-                                    <span>{OAUTH_PROVIDERS[provider].name}</span>
+                                    <span>Sign in with {OAUTH_PROVIDERS[provider].name}</span>
                                 </button>
                             </li>
                         )}
