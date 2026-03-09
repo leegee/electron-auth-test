@@ -1,7 +1,6 @@
-// src\main\auth.ts
 import fs from 'node:fs/promises';
-import keytar from 'keytar';
 import * as crypto from 'node:crypto';
+import keytar from 'keytar';
 
 import { BrowserWindow, session } from 'electron';
 
@@ -16,7 +15,9 @@ export type OAuthCallbacks = {
     onRequireActivation: () => void;
 };
 
-const allowedNavigate = ['https://github.com', config.VITE_REDIRECT_URI];
+
+const ALLOWED_URLS = ['https://github.com', config.VITE_REDIRECT_URI];
+
 
 export async function getClientSecret(): Promise<string | null> {
     console.trace('Enter getClientSecret');
@@ -27,6 +28,8 @@ export async function getClientSecret(): Promise<string | null> {
     if (existing) return existing;
 
     return null;
+
+    // Not sure we still want/need this:
 
     try {
         const secret = await accountantActivationFromFile();
@@ -78,6 +81,7 @@ async function accountantActivationFromFile(): Promise<string> {
     return secret;
 }
 
+
 export async function storeActivationKey(activation_key: string) {
     const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
     console.log('auth: secret =', secret)
@@ -100,10 +104,7 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
 
 
 
-
-/**
- * Starts GitHub OAuth popup flow. Sends results via callbacks.
- */
+// Starts GitHub OAuth popup flow. Sends results via callbacks.
 export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     const clientSecret = await getClientSecret();
 
@@ -131,36 +132,53 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
 
     oauthWindow.setMenu(null);
 
-    oauthWindow.webContents.on('will-navigate', (event, url) => {
-        if (!allowedNavigate.some((prefix) => url.startsWith(prefix))) {
-            console.log('will-navigate: Blocked navigation to', url);
-            event.preventDefault();
-        } else {
-            console.log('will-navigate: Allowed navigation to', url);
-        }
-    });
+    let handled = false;
 
-    oauthWindow.webContents.on('will-redirect', async (event, url) => {
-        console.log('will-redirect', url, 'test for', config.VITE_REDIRECT_URI)
+    const handleOAuthCallback = async (url: string) => {
+        if (handled) return;
         if (url.startsWith(config.VITE_REDIRECT_URI)) {
-            event.preventDefault();
-            oauthWindow.close();
-            console.log('will-direct matched', config.VITE_REDIRECT_URI)
+            handled = true;
             const code = new URL(url).searchParams.get('code');
-            console.log('will-direct code', code)
+            oauthWindow.close();
             if (code) await exchangeCodeForToken(code, callbacks);
         }
+    };
+
+    oauthWindow.webContents.on('will-navigate', (event, url) => {
+        if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+            console.log('Blocked navigation to', url);
+            event.preventDefault();
+        } else {
+            handleOAuthCallback(url);
+        }
     });
 
+    oauthWindow.webContents.on('will-redirect', (event, url) => {
+        if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+            console.log('Blocked redirect to', url);
+            event.preventDefault();
+        } else {
+            handleOAuthCallback(url);
+        }
+    });
+
+    oauthWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+            handleOAuthCallback(url);
+        } else {
+            console.log('Blocked new window to', url);
+        }
+        return { action: 'deny' };
+    });
+
+    // Load GitHub OAuth URL
     const oauthUrl = `https://github.com/login/oauth/authorize?client_id=${config.VITE_CLIENT_ID}&scope=read:user`;
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
 }
 
-/**
- * Exchanges GitHub OAuth code for access token.
- */
+// Exchanges GitHub OAuth code for access token.
 export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbacks) {
     const clientSecret = await getClientSecret();
     if (!clientSecret) {
