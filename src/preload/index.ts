@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
 import type { GitHubTokenResponseBad } from '../shared/github-types';
-import 'electron-log/preload';
+import '@shared/logger'; // Required
 
 function listenOnce<T>(channel: string, callback: (payload: T) => void, removeChannels: string[] = []) {
   const wrapper = (_event: Electron.IpcRendererEvent, payload: T) => {

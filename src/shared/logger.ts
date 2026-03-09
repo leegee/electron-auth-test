@@ -1,3 +1,4 @@
+import 'electron-log/preload';
 import log from 'electron-log';
 
 if (typeof process !== 'undefined' && (process as any).type === 'browser') {
