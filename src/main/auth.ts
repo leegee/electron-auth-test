@@ -104,7 +104,10 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
 
 
 // Starts GitHub OAuth popup flow. Sends results via callbacks.
-export async function startGithubOAuth(callbacks: OAuthCallbacks) {
+export async function startOauth(
+    provider: keyof typeof OAUTH_CONFIG,
+    callbacks: OAuthCallbacks
+) {
     const clientSecret = await getClientSecret();
 
     if (!clientSecret) {
@@ -112,7 +115,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         return;
     }
 
-    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_CONFIG.github.allowedUrls];
+    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_CONFIG[provider].allowedUrls];
 
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
@@ -141,7 +144,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
             handled = true;
             const code = new URL(url).searchParams.get('code');
             oauthWindow.close();
-            if (code) await exchangeCodeForToken(code, callbacks);
+            if (code) await exchangeCodeForToken('github', code, callbacks);
         }
     };
 
@@ -172,14 +175,18 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         return { action: 'deny' };
     });
 
-    const oauthUrl = OAUTH_CONFIG.github.authUrl + config.VITE_GITHUB_CLIENT_ID;
+    const oauthUrl = OAUTH_CONFIG[provider].authUrl + config.VITE_GITHUB_CLIENT_ID;
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
 }
 
-// Exchanges GitHub OAuth code for access token.
-export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbacks) {
+// Exchanges OAuth code for access token.
+export async function exchangeCodeForToken(
+    provider: keyof typeof OAUTH_CONFIG,
+    code: string,
+    callbacks: OAuthCallbacks
+) {
     const clientSecret = await getClientSecret();
     if (!clientSecret) {
         log.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
@@ -190,7 +197,7 @@ export async function exchangeCodeForToken(code: string, callbacks: OAuthCallbac
     try {
         log.log('exchangeCodeForToken: trying to get token')
         // 'https://github.com/login/oauth/access_token'
-        const tokenResponse = await fetch(OAUTH_CONFIG.github.tokenUrl, {
+        const tokenResponse = await fetch(OAUTH_CONFIG[provider].tokenUrl, {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({

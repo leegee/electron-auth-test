@@ -125,7 +125,7 @@ function handleSecondInstance(mainWindow: BrowserWindow) {
       onRequireActivation: () => mainWindow.webContents.send('require-activation'),
     };
 
-    await exchangeCodeForToken(code, callbacks);
+    await exchangeCodeForToken('github', code, callbacks);
     mainWindow.focus();
   });
 
