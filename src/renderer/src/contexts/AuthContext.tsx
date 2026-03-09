@@ -32,7 +32,10 @@ export function AuthProvider(props): JSX.Element {
 
             if (clientSecret !== null) {
                 // Already activated so start OAuth flow
-                if (provider) setSelectedProvider(provider);
+                if (!provider) {
+                    throw new Error('No provider')
+                }
+                setSelectedProvider(provider);
                 await api.oauthLogin(selectedProvider());
             } else {
                 // Not activated so show activation modal
@@ -85,7 +88,7 @@ export function AuthProvider(props): JSX.Element {
 
     // Guard children 
     return (
-        <AuthContext.Provider value={{ authorised, loading, login, logout }}>
+        <AuthContext.Provider value={{ authorised, loading, login, logout, selectedProvider }}>
             <Switch>
                 <Match when={showActivationModal()}>
                     <ActivationModal
