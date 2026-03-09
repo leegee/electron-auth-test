@@ -1,6 +1,7 @@
 import { Show } from 'solid-js'
 import { useAuth } from '../contexts/AuthContext'
 
+
 export default function AuthButton() {
     const auth = useAuth()
     return (
@@ -17,7 +18,11 @@ export default function AuthButton() {
                 onClick={auth.login}
                 disabled={auth.loading()}
             >
-                <i>login</i> {auth.loading() ? 'Logging in ...' : 'Log In with GitHub'}
+                <img src="/assets/GitHub_Invertocat_Black.svg" width={24} height={24} alt="GitHub Logo" />
+                <span>
+                    {auth.loading() ? 'Logging in ...' : 'Log In'}
+                </span>
+                <span class="tooltip left">Log in with your GitHub account</span>
             </button>
         </Show>
 
