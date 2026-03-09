@@ -1,25 +1,22 @@
-import 'electron-log/preload';
-import log from 'electron-log';
+import eLog from 'electron-log';
 
-// Avoid duplicate log messages in Vite dev mode
-if (typeof window !== 'undefined' && !(window as any).__electronLogInitialized) {
-    (window as any).__electronLogInitialized = true;
-    log.transports.console.level = false;
-}
-
+let log;
 
 if (typeof process !== 'undefined' && (process as any).type === 'browser') {
+    log = require('electron-log/main');
     const fs = require('fs');
 
-    const logFile = log.transports.file.getFile().path;
+    const logFile = log.transports.file.getFile()?.path;
     try {
-        if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
+        if (logFile && fs.existsSync(logFile)) fs.unlinkSync(logFile);
         console.log(`Cleared old log: ${logFile}`);
     } catch (err) {
         console.warn('Failed to clear log file:', err);
     }
 
     log.transports.file.level = 'warn';
+} else {
+    log = eLog; // require('electron-log/renderer');
 }
 
 log.transports.console.level = 'debug';
