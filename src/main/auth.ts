@@ -19,9 +19,6 @@ export type OAuthCallbacks = {
 
 log.transports.file.level = 'info';
 
-const ALLOWED_URLS = ['https://github.com', config.VITE_REDIRECT_URI];
-
-
 export async function getClientSecret(): Promise<string | null> {
     console.trace('Enter getClientSecret');
     const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION);
@@ -115,6 +112,8 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
         return;
     }
 
+    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_CONFIG.github.allowedUrls];
+
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
     const oauthWindow = new BrowserWindow({
@@ -147,7 +146,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     };
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
-        if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+        if (!allowedUrls.some((prefix) => url.startsWith(prefix))) {
             log.log('Blocked navigation to', url);
             event.preventDefault();
         } else {
@@ -156,7 +155,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     });
 
     oauthWindow.webContents.on('will-redirect', (event, url) => {
-        if (!ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+        if (!allowedUrls.some((prefix) => url.startsWith(prefix))) {
             log.log('Blocked redirect to', url);
             event.preventDefault();
         } else {
@@ -165,7 +164,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     });
 
     oauthWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (ALLOWED_URLS.some((prefix) => url.startsWith(prefix))) {
+        if (allowedUrls.some((prefix) => url.startsWith(prefix))) {
             handleOAuthCallback(url);
         } else {
             log.log('Blocked new window to', url);
