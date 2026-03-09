@@ -26,7 +26,7 @@ app.whenReady().then(() => {
   initIpc(mainWindow);
   initAutoUpdates(mainWindow)
 
-  if (config.VITE_SHOW_DEV_TOOLS) {
+  if (config.VITE_DEV_MODE) {
     enableRequestLogging(mainWindow);
     enableRendererDependencyLogging();
   }
@@ -46,7 +46,7 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 
-  if (config.VITE_SHOW_DEV_TOOLS) app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window));
+  if (config.VITE_DEV_MODE) app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window));
 });
 
 // Quit when all windows closed except macOS
@@ -96,7 +96,7 @@ function createWindow(): BrowserWindow {
     return { action: 'deny' };
   });
 
-  if (config.VITE_SHOW_DEV_TOOLS) mainWindow.webContents.openDevTools();
+  if (config.VITE_DEV_MODE) mainWindow.webContents.openDevTools();
 
   loadMainWindow(mainWindow);
   return mainWindow;

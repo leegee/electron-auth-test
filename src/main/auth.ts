@@ -115,7 +115,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
     const oauthWindow = new BrowserWindow({
-        width: config.VITE_SHOW_DEV_TOOLS ? 600 : 500,
+        width: config.VITE_DEV_MODE ? 600 : 500,
         height: 600,
         alwaysOnTop: true,
         focusable: true,
@@ -123,7 +123,7 @@ export async function startGithubOAuth(callbacks: OAuthCallbacks) {
             sandbox: true,
             backgroundThrottling: false,
             contextIsolation: true,
-            devTools: config.VITE_SHOW_DEV_TOOLS,
+            devTools: config.VITE_DEV_MODE,
             nodeIntegration: false,
             session: ses,
         },

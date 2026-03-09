@@ -31,7 +31,7 @@ function normaliseBoolean(value?: string | boolean, defaultVal = false): boolean
 export const config = {
     isPackaged,
     VITE_BUILD_PASSWORD: getEnv('VITE_BUILD_PASSWORD'),
-    VITE_SHOW_DEV_TOOLS: normaliseBoolean(getEnv('VITE_SHOW_DEV_TOOLS', false)),
+    VITE_DEV_MODE: normaliseBoolean(getEnv('VITE_DEV_MODE', false)),
     VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
     VITE_CACHE_USER_SESSIONS: normaliseBoolean(getEnv('VITE_CACHE_USER_SESSIONS', false)),
     VITE_CLIENT_ID: getEnv('VITE_CLIENT_ID'),

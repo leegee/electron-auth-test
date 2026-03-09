@@ -30,7 +30,7 @@ function register() {
             const base = path.join(app.getAppPath(), 'dist', 'renderer');
             const filePath = path.resolve(base, '.' + urlPath);
 
-            if (config.VITE_SHOW_DEV_TOOLS) {
+            if (config.VITE_DEV_MODE) {
                 const exists = fs.existsSync(filePath)
                 log.info('PROTOCOL:',
                     req.url,
