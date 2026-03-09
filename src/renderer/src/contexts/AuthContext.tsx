@@ -1,26 +1,29 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
 
-import { type GitHubTokenResponseBad } from '@shared/github-types';
+import { type OAuthTokenResponseBad } from '@shared/github-types';
 import log from '@shared/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 type AuthContextType = {
-    authorised: () => boolean
-    loading: () => boolean
-    selectedProvider: () => 'github' | 'google'
-    login: (provider: 'github' | 'google') => Promise<void>
-    logout: () => Promise<void>
+    authorised: () => boolean;
+    loading: () => boolean;
+    selectedProvider: () => keyof typeof OAUTH_PROVIDERS;
+    login: (provider: keyof typeof OAUTH_PROVIDERS) => Promise<void>;
+    logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>()
+const AuthContext = createContext<AuthContextType>();
 
 export function AuthProvider(props): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false);
     const [loading, setLoading] = createSignal(false);
     const [showActivationModal, setShowActivationModal] = createSignal(false);
-    const [selectedProvider, setSelectedProvider] = createSignal<'github' | 'google'>('github');
+    const [selectedProvider, setSelectedProvider] = createSignal<keyof typeof OAUTH_PROVIDERS>(
+        Object.keys(OAUTH_PROVIDERS)[0] as keyof typeof OAUTH_PROVIDERS
+    );
 
     api.onOAuthSuccess(() => {
         setAuthorised(true);
@@ -28,13 +31,13 @@ export function AuthProvider(props): JSX.Element {
         showToast('Login successful!', 'success', 3000);
     });
 
-    api.onOAuthError(async (errorMsg: GitHubTokenResponseBad) => {
+    api.onOAuthError(async (errorMsg: OAuthTokenResponseBad) => {
         log.log('OAuth error received:', errorMsg);
         setLoading(false);
 
         switch (errorMsg.error) {
             case 'incorrect_client_credentials':
-                await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
+                await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION, selectedProvider());
                 setShowActivationModal(true);
                 break;
 
@@ -55,17 +58,18 @@ export function AuthProvider(props): JSX.Element {
 
     const logout = async () => {
         log.log('logout')
-        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_SESSION_TOKEN);
+        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_SESSION_TOKEN, selectedProvider());
         setAuthorised(false);
     }
 
-    const login = async (provider: 'github' | 'google') => { // TODO keyof typeof OAUTH_PROVIDERS
+    const login = async (provider: keyof typeof OAUTH_PROVIDERS) => {
+        log.log('AuthContext.login  enter with', provider)
         setLoading(true);
 
         try {
             // Check if activation secret exists in Keytar
-            const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
-            log.log('got client secret')
+            const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION, selectedProvider());
+            log.log('AuthContext.login got client secret')
 
             // Already activated so start OAuth flow
             if (clientSecret !== null) {
@@ -100,6 +104,7 @@ export function AuthProvider(props): JSX.Element {
             <Switch>
                 <Match when={showActivationModal()}>
                     <ActivationModal
+                        provider={selectedProvider()}
                         onSuccess={async () => {
                             setShowActivationModal(false);
                             await api.oauthLogin(selectedProvider());

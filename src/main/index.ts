@@ -11,7 +11,8 @@ import { initIpc } from './ipc-main-bridge';
 import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
 import { initAutoUpdates } from './auto-updates';
 import { enableRendererDependencyLogging, enableRequestLogging } from './log-requests';
-import customProtocol from './custom-protocl';
+import customProtocol from './custom-protocol';
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 customProtocol.init();
 
@@ -32,10 +33,10 @@ app.whenReady().then(() => {
     enableRendererDependencyLogging();
   }
 
-  ipcMain.handle('activate-app', async (_event, activationKey: string) => {
+  ipcMain.handle('activate-app', async (_event, activationKey: string, provider: keyof typeof OAUTH_PROVIDERS) => {
     try {
       log.log('Received activate-app')
-      await storeActivationKey(activationKey)
+      await storeActivationKey(activationKey, provider)
       return { success: true };
     } catch (err) {
       return { success: false, error: (err as Error).message };
@@ -70,7 +71,9 @@ function getMainWindowOptions() {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
     },
   };
 }
@@ -104,7 +107,7 @@ function createWindow(): BrowserWindow {
 }
 
 
-// Deep links (Windows/Linux)
+// Deep links 
 function handleSecondInstance(mainWindow: BrowserWindow) {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
@@ -112,12 +115,22 @@ function handleSecondInstance(mainWindow: BrowserWindow) {
     return false;
   }
 
+  // XXX://oauth?provider=XXX&code=XXXX
+
+  // (Windows/Linux)
   app.on('second-instance', async (_event, argv) => {
-    const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
+    const urlArg = argv.find(a =>
+      a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`)
+    );
+
     if (!urlArg) return;
 
-    const code = new URL(urlArg).searchParams.get('code');
-    if (!code) return;
+    const url = new URL(urlArg);
+
+    const code = url.searchParams.get('code');
+    const provider = url.searchParams.get('provider') as keyof typeof OAUTH_PROVIDERS;
+
+    if (!code || !provider) return;
 
     const callbacks: OAuthCallbacks = {
       onSuccess: () => mainWindow.webContents.send('oauth-success'),
@@ -125,8 +138,28 @@ function handleSecondInstance(mainWindow: BrowserWindow) {
       onRequireActivation: () => mainWindow.webContents.send('require-activation'),
     };
 
-    await exchangeCodeForToken('github', code, callbacks);
+    await exchangeCodeForToken(provider, code, callbacks);
+
     mainWindow.focus();
+  });
+
+  app.on('open-url', async (event, urlStr) => {
+    event.preventDefault();
+
+    const url = new URL(urlStr);
+
+    const code = url.searchParams.get('code');
+    const provider = url.searchParams.get('provider') as keyof typeof OAUTH_PROVIDERS;
+
+    if (!code || !provider) return;
+
+    const callbacks: OAuthCallbacks = {
+      onSuccess: () => mainWindow.webContents.send('oauth-success'),
+      onError: (err) => mainWindow.webContents.send('oauth-error', err),
+      onRequireActivation: () => mainWindow.webContents.send('require-activation'),
+    };
+
+    await exchangeCodeForToken(provider, code, callbacks);
   });
 
   return true;

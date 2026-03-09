@@ -2,15 +2,26 @@ import { createSignal, onMount } from 'solid-js';
 
 import { showToast } from './Toast';
 import { api } from '@renderer/renderer-bridge';
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
-export function ActivationModal(props: { onSuccess: () => void }) {
+type ActivationModalProps = {
+    onSuccess: () => void;
+    provider: keyof typeof OAUTH_PROVIDERS;
+};
+
+export function ActivationModal(props: ActivationModalProps) {
     const [key, setKey] = createSignal('');
     const [loading, setLoading] = createSignal(false);
     const [active, setActive] = createSignal(true);
 
     const submit = async () => {
+        if (!props.provider) {
+            showToast('Provider not set!', 'error', 5_000);
+            return;
+        }
+
         setLoading(true);
-        const res = await api.activateApp(key());
+        const res = await api.activateApp(key(), props.provider);
         setLoading(false);
         if (res.success) {
             showToast('Activation successful!', 'success', 1_000);

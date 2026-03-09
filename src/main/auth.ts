@@ -5,26 +5,27 @@ import keytar from 'keytar';
 import { BrowserWindow, session } from 'electron';
 
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
-import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '@shared/github-types';
+import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/github-types';
 import log from '@shared/logger';
 import { config } from './config';
 
-export type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad;
-
 export type OAuthCallbacks = {
     onSuccess: () => void;
-    onError: (err: GitHubTokenResponseBad) => void;
+    onError: (err: OAuthTokenResponseBad) => void;
     onRequireActivation: () => void;
 };
 
 
 log.transports.file.level = 'info';
 
-export async function getClientSecret(): Promise<string | null> {
-    console.trace('Enter getClientSecret');
-    const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION);
+export async function getClientSecret(provider: keyof typeof OAUTH_PROVIDERS): Promise<string | null> {
+    log.log('Enter getClientSecret for', provider);
 
-    log.log('In getClientSecret with', (existing ? 'existing token' : 'nout'), existing);
+    if (!provider) throw new Error('No provider provided to auth.getClientSecret');
+
+    const existing = await keytar.getPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION + '-' + provider);
+
+    log.log(`In getClientSecret for ${provider} with`, (existing ? 'existing token' : 'nout'), existing);
 
     if (existing) return existing;
 
@@ -33,7 +34,7 @@ export async function getClientSecret(): Promise<string | null> {
     // Not sure we still want/need this:
 
     try {
-        const secret = await accountantActivationFromFile();
+        const secret = await accountantActivationFromFile(provider);
         return secret;
     } catch {
         //  neither Keytar nor file exists → manual activation required
@@ -43,7 +44,7 @@ export async function getClientSecret(): Promise<string | null> {
 
 
 // First-run initialization of CLIENT_SECRET into Keytar
-async function accountantActivationFromFile(): Promise<string> {
+async function accountantActivationFromFile(provider: keyof typeof OAUTH_PROVIDERS): Promise<string> {
     log.log('enter initializeSecret');
 
     try {
@@ -71,7 +72,7 @@ async function accountantActivationFromFile(): Promise<string> {
     let secret = '';
 
     try {
-        await storeActivationKey(secretData.ACTIVATION_KEY);
+        secret = await storeActivationKey(secretData.ACTIVATION_KEY, provider);
     } catch (err) {
         log.log('auth: error =', err)
         throw new Error(String(err));
@@ -82,10 +83,11 @@ async function accountantActivationFromFile(): Promise<string> {
     return secret;
 }
 
-export async function storeActivationKey(activation_key: string) {
+export async function storeActivationKey(activation_key: string, provider: keyof typeof OAUTH_PROVIDERS) {
     const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
-    log.log('auth: secret =', secret)
-    await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION, secret);
+    log.log(`auth.storeActivationKey: secret = ${secret} for ${provider}`)
+    await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION + '-' + provider, secret);
+    return secret;
 }
 
 export function decryptActivationKey(keyBase64: string, password: string): string {
@@ -95,7 +97,7 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
     const tag = data.slice(12, 28);
     const encrypted = data.slice(28);
 
-    const key = crypto.createHash('sha256').update(password).digest(); // 32 bytes
+    const key = crypto.createHash('sha256').update(password).digest(); // 32 bytes but  move to PBKDF2/Argon2
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
     decipher.setAuthTag(tag);
 
@@ -104,19 +106,19 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
 
 
 
-// Starts GitHub OAuth popup flow. Sends results via callbacks.
+// Starts OAuth popup flow. Sends results via callbacks.
 export async function startOauth(
     provider: keyof typeof OAUTH_PROVIDERS,
     callbacks: OAuthCallbacks
 ) {
-    const clientSecret = await getClientSecret();
+    const clientSecret = await getClientSecret(provider);
 
     if (!clientSecret) {
         callbacks.onRequireActivation();
         return;
     }
 
-    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_PROVIDERS[provider].allowedUrls];
+    const allowedUrlPrefixes = [config.VITE_REDIRECT_URI, ...OAUTH_PROVIDERS[provider].allowedUrls];
 
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
@@ -137,20 +139,38 @@ export async function startOauth(
 
     oauthWindow.setMenu(null);
 
+    oauthWindow.on('closed', () => oauthWindow.destroy());
+
     let handled = false;
 
     const handleOAuthCallback = async (url: string) => {
         if (handled) return;
-        if (url.startsWith(config.VITE_REDIRECT_URI)) {
-            handled = true;
-            const code = new URL(url).searchParams.get('code');
-            oauthWindow.close();
-            if (code) await exchangeCodeForToken('github', code, callbacks);
+        handled = true;
+
+        const u = new URL(url);
+        const returnedState = u.searchParams.get('state');
+        const code = u.searchParams.get('code');
+        const error = u.searchParams.get('error');
+
+        oauthWindow.close();
+
+        if (error) {
+            callbacks.onError({ error, error_description: 'OAuth redirect returned error' });
+            return;
+        }
+
+        if (returnedState !== state) {
+            callbacks.onError({ error: 'state_mismatch', error_description: 'OAuth state does not match' });
+            return;
+        }
+
+        if (code) {
+            await exchangeCodeForToken(provider, code, callbacks);
         }
     };
 
     oauthWindow.webContents.on('will-navigate', (event, url) => {
-        if (!allowedUrls.some((prefix) => url.startsWith(prefix))) {
+        if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
             log.log('Blocked navigation to', url);
             event.preventDefault();
         } else {
@@ -159,7 +179,7 @@ export async function startOauth(
     });
 
     oauthWindow.webContents.on('will-redirect', (event, url) => {
-        if (!allowedUrls.some((prefix) => url.startsWith(prefix))) {
+        if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
             log.log('Blocked redirect to', url);
             event.preventDefault();
         } else {
@@ -168,7 +188,7 @@ export async function startOauth(
     });
 
     oauthWindow.webContents.setWindowOpenHandler(({ url }) => {
-        if (allowedUrls.some((prefix) => url.startsWith(prefix))) {
+        if (allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
             handleOAuthCallback(url);
         } else {
             log.log('Blocked new window to', url);
@@ -176,7 +196,17 @@ export async function startOauth(
         return { action: 'deny' };
     });
 
-    const oauthUrl = OAUTH_PROVIDERS[provider].authUrl + config.getClientId(provider); // config.VITE_GITHUB_CLIENT_ID;
+    // CSRF guard
+    const state = crypto.randomUUID();
+
+    const params = new URLSearchParams({
+        client_id: config.getClientId(provider),
+        redirect_uri: buildRedirectUri(provider),
+        state
+    });
+
+    const oauthUrl = OAUTH_PROVIDERS[provider].authUrl + params.toString();
+
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
@@ -188,7 +218,7 @@ export async function exchangeCodeForToken(
     code: string,
     callbacks: OAuthCallbacks
 ) {
-    const clientSecret = await getClientSecret();
+    const clientSecret = await getClientSecret(provider);
     if (!clientSecret) {
         log.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
         callbacks.onRequireActivation();
@@ -197,35 +227,39 @@ export async function exchangeCodeForToken(
 
     try {
         log.log('exchangeCodeForToken: trying to get token')
-        // 'https://github.com/login/oauth/access_token'
         const tokenResponse = await fetch(OAUTH_PROVIDERS[provider].tokenUrl, {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({
-                client_id: config.getClientId(provider), // config.VITE_GITHUB_CLIENT_ID,
+                client_id: config.getClientId(provider),
                 client_secret: clientSecret,
                 code,
-                redirect_uri: config.VITE_REDIRECT_URI,
+                redirect_uri: buildRedirectUri(provider),
             }),
         });
 
-        const tokenData = (await tokenResponse.json()) as GitHubTokenResponse;
-        const accessToken = (tokenData as GitHubTokenResponseGood).access_token;
+        const tokenData = (await tokenResponse.json()) as OAuthTokenResponse;
+        const accessToken = (tokenData as OAuthTokenSuccess).access_token;
 
         if (accessToken) {
             log.log('exchangeCodeForToken: got token')
-            await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN, accessToken);
+            await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_SESSION_TOKEN + '-' + provider, accessToken);
             callbacks.onSuccess();
         } else {
             log.log('exchangeCodeForToken: failed to get token', tokenData)
-            callbacks.onError(tokenData as GitHubTokenResponseBad);
+            callbacks.onError(tokenData as OAuthTokenResponseBad);
         }
     } catch (err) {
         log.error('exchangeCodeForToken: error exchanging code for token:', err);
-        const errorRes: GitHubTokenResponseBad = {
+        const errorRes: OAuthTokenResponseBad = {
             error: 'network_error',
             error_description: (err as Error).message,
         };
         callbacks.onError(errorRes);
     }
+}
+
+// XXX://oauth?provider=XXX&code=XXXX
+function buildRedirectUri(provider: keyof typeof OAUTH_PROVIDERS) {
+    return config.VITE_REDIRECT_URI + '?provider=' + provider
 }
