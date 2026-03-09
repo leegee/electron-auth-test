@@ -45,7 +45,12 @@ export const config = {
         ? `${getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
         : 'http://localhost:3000/callback',
 
-    getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => getEnv('VITE_' + provider.toUpperCase() + '_CLIENT_ID')
+    getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => {
+        const varName = 'VITE_' + provider.toUpperCase() + '_CLIENT_ID';
+        const rv = getEnv(varName);
+        if (!rv) throw new TypeError(`Environment variable ${varName} is not configured.`)
+        return rv;
+    }
 } as const;
 
 
