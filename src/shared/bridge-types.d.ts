@@ -7,7 +7,7 @@ export interface KeytarApi {
 }
 
 export interface OAuthApi {
-    oauthLogin(): void;
+    oauthLogin(string: keyof typeof OAUTH_CONFIG): void;
     onRequireActivation(cb: () => void): void;
     onOAuthSuccess(cb: () => void): void;
     onOAuthError(cb: (err: GitHubTokenResponseBad) => void): void;

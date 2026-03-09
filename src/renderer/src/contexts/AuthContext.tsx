@@ -12,6 +12,7 @@ export function AuthProvider(props): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false);
     const [loading, setLoading] = createSignal(false);
     const [showActivationModal, setShowActivationModal] = createSignal(false);
+    const [selectedProvider, setSelectedProvider] = createSignal<'github' | 'google'>('github');
 
     let oauthListenerAttached = false;
 
@@ -21,16 +22,18 @@ export function AuthProvider(props): JSX.Element {
         setAuthorised(false);
     }
 
-    const login = async () => {
+    const login = async (provider: 'github' | 'google') => { // TODO keyof typeof OAUTH_CONFIG
         setLoading(true);
+
         try {
             // Check if activation secret exists in Keytar
             const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION);
             log.log('got client secret')
 
             if (clientSecret !== null) {
-                // Already activated so start GitHub OAuth
-                await api.oauthLogin();
+                // Already activated so start OAuth flow
+                if (provider) setSelectedProvider(provider);
+                await api.oauthLogin(selectedProvider());
             } else {
                 // Not activated so show activation modal
                 setShowActivationModal(true);
@@ -64,7 +67,7 @@ export function AuthProvider(props): JSX.Element {
 
                     default:
                         showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                        api.oauthLogin();
+                        api.oauthLogin(selectedProvider());
                         break;
                 }
             });
@@ -77,7 +80,7 @@ export function AuthProvider(props): JSX.Element {
         }
 
         // Login on mount
-        login();
+        login(selectedProvider());
     });
 
     // Guard children 
@@ -88,7 +91,7 @@ export function AuthProvider(props): JSX.Element {
                     <ActivationModal
                         onSuccess={async () => {
                             setShowActivationModal(false);
-                            await api.oauthLogin();
+                            await api.oauthLogin(selectedProvider());
                         }}
                     />
                 </Match>

@@ -15,7 +15,7 @@ export default function AuthButton() {
             </button>
         }>
             <button aria-label="Log in with GitHub"
-                onClick={auth.login}
+                onClick={() => auth.login('github')}
                 disabled={auth.loading()}
             >
                 <img src="/assets/GitHub_Invertocat_Black.svg" width={24} height={24} alt="GitHub Logo" />
