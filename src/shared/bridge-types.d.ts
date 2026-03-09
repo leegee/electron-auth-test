@@ -1,5 +1,5 @@
-import { ipcRenderer } from 'electron';
 import type { GitHubTokenResponseBad } from './github-types';
+import type { OAUTH_CONFIG } from '@shared/oauthConfig';
 
 export interface KeytarApi {
     getPassword(service: string, account: string): Promise<string | null>;

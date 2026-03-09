@@ -4,9 +4,10 @@ import keytar from 'keytar';
 
 import { BrowserWindow, session } from 'electron';
 
-import { config, OAUTH_CONFIG } from './config';
+import { OAUTH_CONFIG } from '@shared/oauthConfig';
 import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '@shared/github-types';
 import log from '@shared/logger';
+import { config } from './config';
 
 export type GitHubTokenResponse = GitHubTokenResponseGood | GitHubTokenResponseBad;
 
