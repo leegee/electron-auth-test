@@ -4,7 +4,7 @@ import keytar from 'keytar';
 
 import { BrowserWindow, session } from 'electron';
 
-import { OAUTH_CONFIG } from '@shared/oauthConfig';
+import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 import type { GitHubTokenResponseGood, GitHubTokenResponseBad } from '@shared/github-types';
 import log from '@shared/logger';
 import { config } from './config';
@@ -106,7 +106,7 @@ export function decryptActivationKey(keyBase64: string, password: string): strin
 
 // Starts GitHub OAuth popup flow. Sends results via callbacks.
 export async function startOauth(
-    provider: keyof typeof OAUTH_CONFIG,
+    provider: keyof typeof OAUTH_PROVIDERS,
     callbacks: OAuthCallbacks
 ) {
     const clientSecret = await getClientSecret();
@@ -116,7 +116,7 @@ export async function startOauth(
         return;
     }
 
-    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_CONFIG[provider].allowedUrls];
+    const allowedUrls = [config.VITE_REDIRECT_URI, ...OAUTH_PROVIDERS[provider].allowedUrls];
 
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
@@ -176,7 +176,7 @@ export async function startOauth(
         return { action: 'deny' };
     });
 
-    const oauthUrl = OAUTH_CONFIG[provider].authUrl + config.VITE_GITHUB_CLIENT_ID;
+    const oauthUrl = OAUTH_PROVIDERS[provider].authUrl + config.VITE_GITHUB_CLIENT_ID;
     oauthWindow.loadURL(oauthUrl);
     oauthWindow.show();
     oauthWindow.focus();
@@ -184,7 +184,7 @@ export async function startOauth(
 
 // Exchanges OAuth code for access token.
 export async function exchangeCodeForToken(
-    provider: keyof typeof OAUTH_CONFIG,
+    provider: keyof typeof OAUTH_PROVIDERS,
     code: string,
     callbacks: OAuthCallbacks
 ) {
@@ -198,7 +198,7 @@ export async function exchangeCodeForToken(
     try {
         log.log('exchangeCodeForToken: trying to get token')
         // 'https://github.com/login/oauth/access_token'
-        const tokenResponse = await fetch(OAUTH_CONFIG[provider].tokenUrl, {
+        const tokenResponse = await fetch(OAUTH_PROVIDERS[provider].tokenUrl, {
             method: 'POST',
             headers: { 'Accept': 'application/json' },
             body: new URLSearchParams({

@@ -22,7 +22,7 @@ export function AuthProvider(props): JSX.Element {
         setAuthorised(false);
     }
 
-    const login = async (provider: 'github' | 'google') => { // TODO keyof typeof OAUTH_CONFIG
+    const login = async (provider: 'github' | 'google') => { // TODO keyof typeof OAUTH_PROVIDERS
         setLoading(true);
 
         try {

@@ -1,5 +1,5 @@
 import type { GitHubTokenResponseBad } from './github-types';
-import type { OAUTH_CONFIG } from '@shared/oauthConfig';
+import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 export interface KeytarApi {
     getPassword(service: string, account: string): Promise<string | null>;
@@ -7,7 +7,7 @@ export interface KeytarApi {
 }
 
 export interface OAuthApi {
-    oauthLogin(string: keyof typeof OAUTH_CONFIG): void;
+    oauthLogin(string: keyof typeof OAUTH_PROVIDERS): void;
     onRequireActivation(cb: () => void): void;
     onOAuthSuccess(cb: () => void): void;
     onOAuthError(cb: (err: GitHubTokenResponseBad) => void): void;
