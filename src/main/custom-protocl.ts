@@ -18,20 +18,8 @@ function init() {
 
 // Register custom protocol for deep links
 function register() {
-    // try {
-    //   protocol.registerFileProtocol(config.VITE_CUSTOM_URL_PROTOCOL, (request, callback) => {
-    //     const urlPath = request.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
-    //     const filePath = path.join(app.getAppPath(), 'dist', 'renderer', urlPath);
-    //     console.log(`Serving ${config.VITE_CUSTOM_URL_PROTOCOL}:// -> ${filePath}`);
-    //     callback({ path: filePath });
-    //   });
-    // } catch (err) {
-    //   console.error(`Failed to register "${config.VITE_CUSTOM_URL_PROTOCOL}" protocol`, err);
-    // }
     protocol.handle(config.VITE_CUSTOM_URL_PROTOCOL, (req: GlobalRequest) => {
         try {
-            // let urlPath = req.url.replace(`${config.VITE_CUSTOM_URL_PROTOCOL}://`, '');
-
             const { pathname } = new URL(req.url);
             let urlPath = decodeURIComponent(pathname);
 
