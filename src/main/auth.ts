@@ -164,8 +164,10 @@ export async function startOauth(
             return;
         }
 
+        // code_verifier
+
         if (code) {
-            await exchangeCodeForToken(provider, code, callbacks);
+            await exchangeCodeForToken(provider, code, code_verifier, callbacks);
         }
     };
 
@@ -196,12 +198,16 @@ export async function startOauth(
         return { action: 'deny' };
     });
 
+    const { code_verifier, code_challenge } = generatePKCE();
     const csrfGaurd = crypto.randomUUID();
 
     const params = new URLSearchParams({
         client_id: config.getClientId(provider),
         redirect_uri: buildRedirectUri(provider),
-        state: csrfGaurd
+        response_type: 'code',
+        state: csrfGaurd,
+        code_challenge,
+        code_challenge_method: 'S256',
     });
 
     const oauthUrl = OAUTH_PROVIDERS[provider].authUrl + params.toString();
@@ -215,7 +221,8 @@ export async function startOauth(
 export async function exchangeCodeForToken(
     provider: keyof typeof OAUTH_PROVIDERS,
     code: string,
-    callbacks: OAuthCallbacks
+    code_verifier: string,
+    callbacks: OAuthCallbacks,
 ) {
     const clientSecret = await getClientSecret(provider);
     if (!clientSecret) {
@@ -233,6 +240,7 @@ export async function exchangeCodeForToken(
                 client_id: config.getClientId(provider),
                 client_secret: clientSecret,
                 code,
+                code_verifier,
                 redirect_uri: buildRedirectUri(provider),
             }),
         });
@@ -248,7 +256,9 @@ export async function exchangeCodeForToken(
             log.log('exchangeCodeForToken: failed to get token', tokenData)
             callbacks.onError(tokenData as OAuthTokenResponseBad);
         }
-    } catch (err) {
+    }
+
+    catch (err) {
         log.error('exchangeCodeForToken: error exchanging code for token:', err);
         const errorRes: OAuthTokenResponseBad = {
             error: 'network_error',
@@ -261,4 +271,12 @@ export async function exchangeCodeForToken(
 // XXX://oauth?provider=XXX&code=XXXX
 function buildRedirectUri(provider: keyof typeof OAUTH_PROVIDERS) {
     return config.VITE_REDIRECT_URI + '?provider=' + provider
+}
+
+
+function generatePKCE(): { code_verifier: string; code_challenge: string } {
+    const code_verifier = crypto.randomBytes(32).toString('base64url'); // 43–128 chars
+    const hash = crypto.createHash('sha256').update(code_verifier).digest();
+    const code_challenge = hash.toString('base64url');
+    return { code_verifier, code_challenge };
 }
