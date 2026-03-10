@@ -15,5 +15,4 @@ An Electron application with Solid and TypeScript
 
 ## TODO
 
-* Move to PBKDF2/Argon2
-* PACE
+Tests
