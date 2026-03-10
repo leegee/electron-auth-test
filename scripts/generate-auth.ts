@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as crypto from 'node:crypto';
+import { encryptActivationKey } from '../src/main/crypt';
 import keytar from 'keytar';
 
 const VITE_BUILD_PASSWORD = process.env.VITE_BUILD_PASSWORD;
@@ -47,7 +47,7 @@ for (const [provider, clientSecret] of Object.entries(providers)) {
         continue;
     }
 
-    const activationKey = encryptSecret(clientSecret, VITE_BUILD_PASSWORD);
+    const activationKey = await encryptActivationKey(clientSecret, VITE_BUILD_PASSWORD);
     activationKeys[`${VITE_ACCOUNT_ACTIVATION}-${provider}`] = activationKey;
 
     console.log(`Created activation key for ${provider}: ${activationKey}`);
@@ -57,11 +57,3 @@ fs.writeFileSync(outputPath, JSON.stringify(activationKeys, null, 2), { encoding
 console.log(`Activation keys written to ${outputPath}`);
 
 
-function encryptSecret(secret: string, password: string) {
-    const iv = crypto.randomBytes(12); // 12-byte IV
-    const key = crypto.createHash('sha256').update(password).digest(); // 32-byte key but move to PBKDF2/Argon2
-    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
-    const encrypted = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
-    const tag = cipher.getAuthTag();
-    return Buffer.concat([iv, tag, encrypted]).toString('base64');
-}

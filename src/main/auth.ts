@@ -8,12 +8,14 @@ import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/github-types';
 import log from '@shared/logger';
 import { config } from './config';
+import { decryptActivationKey } from './crypt';
 
 export type OAuthCallbacks = {
     onSuccess: () => void;
     onError: (err: OAuthTokenResponseBad) => void;
     onRequireActivation: () => void;
 };
+
 
 const pkceMap = new Map<string, { code_verifier: string; provider: keyof typeof OAUTH_PROVIDERS }>();
 
@@ -92,27 +94,14 @@ async function accountantActivationFromFile(provider: keyof typeof OAUTH_PROVIDE
     return secret;
 }
 
+
 export async function storeActivationKey(activation_key: string, provider: keyof typeof OAUTH_PROVIDERS) {
-    const secret = decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
-    log.log(`auth.storeActivationKey: secret = ${secret} for ${provider}`)
+    log.log(`auth.storeActivationKey enter for ${provider}`)
+    const secret = await decryptActivationKey(activation_key, config.VITE_BUILD_PASSWORD);
+    log.log(`auth.storeActivationKey created for ${provider}`)
     await keytar.setPassword(config.VITE_SERVICE_NAME, config.VITE_ACCOUNT_ACTIVATION + '-' + provider, secret);
     return secret;
 }
-
-export function decryptActivationKey(keyBase64: string, password: string): string {
-    log.log('enter decryptActivationKey')
-    const data = Buffer.from(keyBase64, 'base64');
-    const iv = data.slice(0, 12);
-    const tag = data.slice(12, 28);
-    const encrypted = data.slice(28);
-
-    const key = crypto.createHash('sha256').update(password).digest(); // 32 bytes but  move to PBKDF2/Argon2
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(tag);
-
-    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString();
-}
-
 
 
 // Starts OAuth popup flow. Sends results via callbacks.
