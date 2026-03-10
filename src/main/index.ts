@@ -20,6 +20,10 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
 
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
 // Main entry
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
@@ -57,6 +61,7 @@ app.whenReady().then(() => {
 
 // Quit when all windows closed except macOS
 app.on('window-all-closed', () => {
+  log.log('All windows closed');
   if (process.platform !== 'darwin') app.quit();
 });
 

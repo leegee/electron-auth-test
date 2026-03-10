@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises';
+// import fs from 'node:fs/promises';
 import * as crypto from 'node:crypto';
 import keytar from 'keytar';
 
@@ -42,8 +42,7 @@ export async function getClientSecret(provider: keyof typeof OAUTH_PROVIDERS): P
 
     return null;
 
-    // Not sure we still want/need this:
-
+    /*
     try {
         const secret = await accountantActivationFromFile(provider);
         return secret;
@@ -51,10 +50,12 @@ export async function getClientSecret(provider: keyof typeof OAUTH_PROVIDERS): P
         //  neither Keytar nor file exists → manual activation required
         return null;
     }
+    */
 }
 
 
-// First-run initialization of CLIENT_SECRET into Keytar
+// First-run initialization of CLIENT_SECRET into Keytar - current unused
+/*
 async function accountantActivationFromFile(provider: keyof typeof OAUTH_PROVIDERS): Promise<string> {
     log.log('enter initializeSecret');
 
@@ -93,6 +94,7 @@ async function accountantActivationFromFile(provider: keyof typeof OAUTH_PROVIDE
 
     return secret;
 }
+*/
 
 
 export async function storeActivationKey(activation_key: string, provider: keyof typeof OAUTH_PROVIDERS) {
