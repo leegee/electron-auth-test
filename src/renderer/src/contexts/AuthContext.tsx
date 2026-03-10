@@ -1,7 +1,7 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
 
-import { type OAuthTokenResponseBad } from '@shared/github-types';
+import { type OAuthTokenResponseBad } from '@shared/oauth-types';
 import log from '@shared/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
