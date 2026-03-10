@@ -14,6 +14,11 @@ export const OAUTH_PROVIDERS = {
         icon: GoogleIcon,
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?prompt=consent&response_type=code&access_type=offline&scope=openid%20email%20profile&',
         tokenUrl: 'https://oauth2.googleapis.com/token',
-        allowedUrls: ['https://oauth2.googleapis.com', 'https://accounts.google.com/signin', 'https://accounts.google.com/v3/signin/'],
+        allowedUrls: [
+            'https://oauth2.googleapis.com',
+            'https://accounts.google.com/signin',
+            'https://accounts.google.com/v3/signin/',
+            'https://accounts.google.com/v3/signin/challenge'
+        ],
     },
 };

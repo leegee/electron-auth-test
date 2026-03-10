@@ -3,7 +3,7 @@
 An Electron application with Solid and TypeScript
 
 1. Configure GitHub OAuth2.0 in [Developer Settings](https://github.com/settings/developers) 
-1. Configure Google OAuth2.0 at https://console.cloud.google.com/auth/clients?project=electron-secure-test and https://console.cloud.google.com/auth/clients?project=electron-secure-test
+1. Configure Google OAuth2.0 at https://console.cloud.google.com/auth/clients?project=electron-secure-test and https://console.cloud.google.com/auth/clients?project=electron-secure-test (https://developers.google.com/identity/openid-connect/openid-connect)
 1. Edit  `src/main/config.ts` and/or `.env`.
 1. Run the `package.json` script `dev`.
     - An activation key will be generated, stored in a file, used, and the file deleted.

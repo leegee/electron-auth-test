@@ -95,7 +95,7 @@ export function AuthProvider(props): JSX.Element {
 
     onMount(() => {
         // Login on mount
-        // login(selectedProvider());
+        login(selectedProvider());
     });
 
     // Guard children 

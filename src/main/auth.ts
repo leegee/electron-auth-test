@@ -121,7 +121,7 @@ export async function startOauth(
         return;
     }
 
-    const allowedUrlPrefixes = [config.VITE_REDIRECT_URI, ...OAUTH_PROVIDERS[provider].allowedUrls];
+    const allowedUrlPrefixes = [config.VITE_REDIRECT_URI_PREFIX, ...OAUTH_PROVIDERS[provider].allowedUrls];
 
     const ses = session.fromPartition('persist:oauthWindow', { cache: config.VITE_CACHE_USER_SESSIONS });
 
@@ -183,24 +183,36 @@ export async function startOauth(
     };
 
     if (config.VITE_DEV_MODE) {
+        oauthWindow.webContents.on('did-navigate', (_e, url) => {
+            log.log('did-navigate to:', url);
+        });
+
         oauthWindow.webContents.on('will-navigate', (event, url) => {
-            if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-                log.log('Blocked navigation to', url);
+            if (url.startsWith(config.VITE_REDIRECT_URI_PREFIX)) {
+                log.log('will-navigate to:', url);
                 event.preventDefault();
-            } else {
-                log.log('will-navigate to', url);
                 handleOAuthCallback(url);
+            } else {
+                log.log('Passing through navigation to', url);
             }
         });
 
         oauthWindow.webContents.on('will-redirect', (event, url) => {
-            if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-                log.log('Blocked redirect to', url);
+            if (url.startsWith(config.VITE_REDIRECT_URI_PREFIX)) {
+                log.log('will-redirect to:', url);
                 event.preventDefault();
-            } else {
-                log.log('will-redirect to', url);
                 handleOAuthCallback(url);
+            } else {
+                log.log('Passing through redirect to', url);
             }
+        });
+        oauthWindow.webContents.setWindowOpenHandler(({ url }) => {
+            if (allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+                handleOAuthCallback(url);
+            } else {
+                log.log('Blocked new window to', url);
+            }
+            return { action: 'deny' };
         });
     }
 
@@ -288,7 +300,7 @@ export async function exchangeCodeForToken(
 
 
 function buildRedirectUri(provider: keyof typeof OAUTH_PROVIDERS) {
-    return config.VITE_REDIRECT_URI + '?provider=' + provider
+    return config.VITE_REDIRECT_URI_PREFIX + '?provider=' + provider
 }
 
 

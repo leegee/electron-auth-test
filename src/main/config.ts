@@ -40,7 +40,7 @@ export const config = {
     VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electronelectron-secure-test'),
     VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'oauth-token'),
     VITE_ACCOUNT_ACTIVATION: getEnv('VITE_ACCOUNT_ACTIVATION', 'account-activation'),
-    VITE_REDIRECT_URI: isPackaged
+    VITE_REDIRECT_URI_PREFIX: isPackaged
         ? `${getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
         : 'http://localhost:5173/callback',
 
