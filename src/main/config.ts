@@ -37,8 +37,8 @@ export const config = {
     VITE_CACHE_USER_SESSIONS: normaliseBoolean(getEnv('VITE_CACHE_USER_SESSIONS', false)),
     VITE_GITHUB_CLIENT_ID: getEnv('VITE_GITHUB_CLIENT_ID'),
     VITE_ACTIVATION_FILE_PATH,
-    VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electron-github-oauth'),
-    VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'github-token'),
+    VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electronelectron-secure-test'),
+    VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'oauth-token'),
     VITE_ACCOUNT_ACTIVATION: getEnv('VITE_ACCOUNT_ACTIVATION', 'account-activation'),
     DEV_VITE_REDIRECT_URI: 'http://localhost:3000/callback',
     VITE_REDIRECT_URI: isPackaged
