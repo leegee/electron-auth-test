@@ -78,6 +78,8 @@ function getMainWindowOptions() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      enableRemoteModule: false,
+      webSecurity: true,
     },
   };
 }
