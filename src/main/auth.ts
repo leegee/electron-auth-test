@@ -268,7 +268,7 @@ export async function exchangeCodeForToken(
     }
 }
 
-// XXX://oauth?provider=XXX&code=XXXX
+
 function buildRedirectUri(provider: keyof typeof OAUTH_PROVIDERS) {
     return config.VITE_REDIRECT_URI + '?provider=' + provider
 }
