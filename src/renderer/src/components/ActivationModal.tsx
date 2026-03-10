@@ -39,7 +39,7 @@ export function ActivationModal(props: ActivationModalProps) {
         <>
             <dialog class={`modal ${active() ? 'active' : ''}`}>
                 <h2>Activation</h2>
-                <p>Please enter your 'activation key'.</p>
+                <p>Please enter your {OAUTH_PROVIDERS[props.provider].name} 'activation key'.</p>
                 <p>You will only have to do this once.</p>
                 <div class="field top-padding bottom-padding extra-padding">
                     <input
