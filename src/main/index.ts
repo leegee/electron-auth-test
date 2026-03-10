@@ -18,10 +18,6 @@ if (!config.VITE_DEV_MODE) {
   customProtocol.init();
 }
 
-if (!app.requestSingleInstanceLock()) {
-  app.quit();
-}
-
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
@@ -37,6 +33,17 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
 
   const mainWindow = createWindow();
+
+  if (!app.requestSingleInstanceLock()) {
+    app.quit();
+  } else {
+    app.on("second-instance", (_event, _argv) => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+  }
 
   handleDeepLinks(mainWindow);
 
