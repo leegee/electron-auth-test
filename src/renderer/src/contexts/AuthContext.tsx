@@ -120,4 +120,4 @@ export function AuthProvider(props): JSX.Element {
     );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext)!;

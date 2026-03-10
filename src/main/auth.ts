@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import * as crypto from 'node:crypto';
 import keytar from 'keytar';
 
-import { BrowserWindow, session } from 'electron';
+import { app, BrowserWindow, session } from 'electron';
 
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/github-types';
@@ -15,8 +15,17 @@ export type OAuthCallbacks = {
     onRequireActivation: () => void;
 };
 
+const pkceMap = new Map<string, { code_verifier: string; provider: keyof typeof OAUTH_PROVIDERS }>();
 
-log.transports.file.level = 'info';
+export function storePkce(state: string, provider: keyof typeof OAUTH_PROVIDERS, code_verifier: string) {
+    pkceMap.set(state, { provider, code_verifier });
+}
+
+export function getPkce(state: string) {
+    const entry = pkceMap.get(state);
+    pkceMap.delete(state); // remove after use
+    return entry;
+}
 
 export async function getClientSecret(provider: keyof typeof OAUTH_PROVIDERS): Promise<string | null> {
     log.log('Enter getClientSecret for', provider);
@@ -164,8 +173,6 @@ export async function startOauth(
             return;
         }
 
-        // code_verifier
-
         if (code) {
             await exchangeCodeForToken(provider, code, code_verifier, callbacks);
         }
@@ -279,4 +286,52 @@ function generatePKCE(): { code_verifier: string; code_challenge: string } {
     const hash = crypto.createHash('sha256').update(code_verifier).digest();
     const code_challenge = hash.toString('base64url');
     return { code_verifier, code_challenge };
+}
+
+
+export function handleDeepLinks(mainWindow: BrowserWindow) {
+    const callbacksFactory = (): OAuthCallbacks => ({
+        onSuccess: () => mainWindow.webContents.send('oauth-success'),
+        onError: (err) => mainWindow.webContents.send('oauth-error', err),
+        onRequireActivation: () => mainWindow.webContents.send('require-activation'),
+    });
+
+    // Windows/Linux
+    app.on('second-instance', async (_event, argv) => {
+        const urlArg = argv.find(a => a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`));
+        if (!urlArg) return;
+        await handleDeepLinkUrl(urlArg, mainWindow, callbacksFactory);
+    });
+
+    // macOS
+    app.on('open-url', async (event, urlStr) => {
+        event.preventDefault();
+        await handleDeepLinkUrl(urlStr, mainWindow, callbacksFactory);
+    });
+
+    return true;
+}
+
+
+async function handleDeepLinkUrl(urlStr: string, mainWindow: BrowserWindow, callbacksFactory: () => OAuthCallbacks) {
+    try {
+        const url = new URL(urlStr);
+        const code = url.searchParams.get('code');
+        const provider = url.searchParams.get('provider') as keyof typeof OAUTH_PROVIDERS;
+        const state = url.searchParams.get('state');
+
+        if (!code || !provider || !state) return;
+
+        const pkceEntry = getPkce(state);
+        if (!pkceEntry || pkceEntry.provider !== provider) {
+            mainWindow.webContents.send('oauth-error', { error: 'invalid_state' });
+            return;
+        }
+
+        await exchangeCodeForToken(provider, code, pkceEntry.code_verifier, callbacksFactory());
+        mainWindow.focus();
+    } catch (err) {
+        log.error('handleDeepLinkUrl error:', err);
+        mainWindow.webContents.send('oauth-error', { error: 'invalid_url', error_description: String(err) });
+    }
 }

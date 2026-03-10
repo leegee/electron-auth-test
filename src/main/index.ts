@@ -8,7 +8,7 @@ import icon from '../../resources/icon.png?asset';
 import log from '@shared/logger';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
-import { exchangeCodeForToken, OAuthCallbacks, storeActivationKey } from './auth';
+import { handleDeepLinks, storeActivationKey } from './auth';
 import { initAutoUpdates } from './auto-updates';
 import { enableRendererDependencyLogging, enableRequestLogging } from './log-requests';
 import customProtocol from './custom-protocol';
@@ -16,13 +16,17 @@ import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 customProtocol.init();
 
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
+
 // Main entry
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
 
   const mainWindow = createWindow();
 
-  if (!handleSecondInstance(mainWindow)) return;
+  handleDeepLinks(mainWindow);
 
   customProtocol.register();
   initIpc(mainWindow);
@@ -106,61 +110,3 @@ function createWindow(): BrowserWindow {
   return mainWindow;
 }
 
-
-// Deep links 
-function handleSecondInstance(mainWindow: BrowserWindow) {
-  const gotLock = app.requestSingleInstanceLock();
-  if (!gotLock) {
-    app.quit();
-    return false;
-  }
-
-  // XXX://oauth?provider=XXX&code=XXXX
-
-  // (Windows/Linux)
-  app.on('second-instance', async (_event, argv) => {
-    const urlArg = argv.find(a =>
-      a.startsWith(`${config.VITE_CUSTOM_URL_PROTOCOL}://`)
-    );
-
-    if (!urlArg) return;
-
-    const url = new URL(urlArg);
-
-    const code = url.searchParams.get('code');
-    const provider = url.searchParams.get('provider') as keyof typeof OAUTH_PROVIDERS;
-
-    if (!code || !provider) return;
-
-    const callbacks: OAuthCallbacks = {
-      onSuccess: () => mainWindow.webContents.send('oauth-success'),
-      onError: (err) => mainWindow.webContents.send('oauth-error', err),
-      onRequireActivation: () => mainWindow.webContents.send('require-activation'),
-    };
-
-    await exchangeCodeForToken(provider, code, callbacks);
-
-    mainWindow.focus();
-  });
-
-  app.on('open-url', async (event, urlStr) => {
-    event.preventDefault();
-
-    const url = new URL(urlStr);
-
-    const code = url.searchParams.get('code');
-    const provider = url.searchParams.get('provider') as keyof typeof OAUTH_PROVIDERS;
-
-    if (!code || !provider) return;
-
-    const callbacks: OAuthCallbacks = {
-      onSuccess: () => mainWindow.webContents.send('oauth-success'),
-      onError: (err) => mainWindow.webContents.send('oauth-error', err),
-      onRequireActivation: () => mainWindow.webContents.send('require-activation'),
-    };
-
-    await exchangeCodeForToken(provider, code, callbacks);
-  });
-
-  return true;
-}
