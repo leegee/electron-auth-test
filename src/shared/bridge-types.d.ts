@@ -1,4 +1,4 @@
-import type { OAuthTokenResponseBad } from './github-types';
+import type { OAuthTokenResponseBad } from './oauth-types';
 import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 export interface KeytarApi {

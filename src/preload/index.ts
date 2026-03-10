@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 // import 'electron-log/preload';
 
 import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
-import type { OAuthTokenResponseBad } from '../shared/github-types';
+import type { OAuthTokenResponseBad } from '../shared/oauth-types';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 const keytarApi: KeytarApi = {

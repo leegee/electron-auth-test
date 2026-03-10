@@ -5,7 +5,7 @@ import keytar from 'keytar';
 import { app, BrowserWindow, session } from 'electron';
 
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
-import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/github-types';
+import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/oauth-types';
 import log from '@shared/logger';
 import { config } from './config';
 import { decryptActivationKey } from './crypt';
