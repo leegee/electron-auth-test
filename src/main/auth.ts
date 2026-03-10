@@ -159,7 +159,7 @@ export async function startOauth(
             return;
         }
 
-        if (returnedState !== state) {
+        if (returnedState !== csrfGaurd) {
             callbacks.onError({ error: 'state_mismatch', error_description: 'OAuth state does not match' });
             return;
         }
@@ -196,13 +196,12 @@ export async function startOauth(
         return { action: 'deny' };
     });
 
-    // CSRF guard
-    const state = crypto.randomUUID();
+    const csrfGaurd = crypto.randomUUID();
 
     const params = new URLSearchParams({
         client_id: config.getClientId(provider),
         redirect_uri: buildRedirectUri(provider),
-        state
+        state: csrfGaurd
     });
 
     const oauthUrl = OAUTH_PROVIDERS[provider].authUrl + params.toString();
