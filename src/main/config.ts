@@ -40,10 +40,9 @@ export const config = {
     VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electronelectron-secure-test'),
     VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'oauth-token'),
     VITE_ACCOUNT_ACTIVATION: getEnv('VITE_ACCOUNT_ACTIVATION', 'account-activation'),
-    DEV_VITE_REDIRECT_URI: 'http://localhost:3000/callback',
     VITE_REDIRECT_URI: isPackaged
         ? `${getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest')}://callback`
-        : 'http://localhost:3000/callback',
+        : 'http://localhost:5173/callback',
 
     getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => {
         const varName = 'VITE_' + provider.toUpperCase() + '_CLIENT_ID';

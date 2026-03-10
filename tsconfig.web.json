@@ -6,7 +6,8 @@
     "src/renderer/src/**/*.tsx",
     "src/preload/*.d.ts",
     "src/shared/*.ts",
-    "src/global.d.ts"
+    "src/global.d.ts",
+    "./logger.ts"
   ],
   "compilerOptions": {
     "composite": true,

@@ -1,6 +1,6 @@
 import { type BrowserWindow, session } from 'electron';
 
-import log from '@shared/logger';
+import log from './logger';
 
 export function enableRequestLogging(mainWindow: BrowserWindow) {
   const filter = { urls: ['*://*/*'] };

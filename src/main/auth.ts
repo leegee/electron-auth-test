@@ -1,3 +1,5 @@
+// main/auth.ts
+
 // import fs from 'node:fs/promises';
 import * as crypto from 'node:crypto';
 import keytar from 'keytar';
@@ -6,7 +8,7 @@ import { app, BrowserWindow, session } from 'electron';
 
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 import type { OAuthTokenSuccess, OAuthTokenResponseBad, OAuthTokenResponse } from '@shared/oauth-types';
-import log from '@shared/logger';
+import log from './logger';
 import { config } from './config';
 import { decryptActivationKey } from './crypt';
 
@@ -111,6 +113,7 @@ export async function startOauth(
     provider: keyof typeof OAUTH_PROVIDERS,
     callbacks: OAuthCallbacks
 ) {
+    log.log('auth.startOauth caling getClientSecret');
     const clientSecret = await getClientSecret(provider);
 
     if (!clientSecret) {
@@ -145,47 +148,61 @@ export async function startOauth(
 
     const handleOAuthCallback = async (url: string) => {
         if (handled) return;
-        handled = true;
 
         const u = new URL(url);
-        const returnedState = u.searchParams.get('state');
         const code = u.searchParams.get('code');
         const error = u.searchParams.get('error');
+        const returnedState = u.searchParams.get('state');
 
+        if (!returnedState) {
+            callbacks.onError({ error: 'missing_state', error_description: 'OAuth redirect returned error' });
+            return;
+        }
+
+        handled = true;
         oauthWindow.close();
 
         if (error) {
             callbacks.onError({ error, error_description: 'OAuth redirect returned error' });
             return;
         }
+        const pkceEntry = getPkce(returnedState ?? '');
 
-        if (returnedState !== csrfGaurd) {
-            callbacks.onError({ error: 'state_mismatch', error_description: 'OAuth state does not match' });
+        if (!pkceEntry || pkceEntry.provider !== provider) {
+            log.warn('auth.handleOAuthCallback: pkce mismatch', returnedState);
+            callbacks.onError({
+                error: 'state_mismatch',
+                error_description: 'OAuth state does not match',
+            });
             return;
         }
 
         if (code) {
-            await exchangeCodeForToken(provider, code, code_verifier, callbacks);
+            await exchangeCodeForToken(provider, code, pkceEntry.code_verifier, callbacks);
         }
     };
 
-    oauthWindow.webContents.on('will-navigate', (event, url) => {
-        if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-            log.log('Blocked navigation to', url);
-            event.preventDefault();
-        } else {
-            handleOAuthCallback(url);
-        }
-    });
+    if (config.VITE_DEV_MODE) {
+        oauthWindow.webContents.on('will-navigate', (event, url) => {
+            if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+                log.log('Blocked navigation to', url);
+                event.preventDefault();
+            } else {
+                log.log('will-navigate to', url);
+                handleOAuthCallback(url);
+            }
+        });
 
-    oauthWindow.webContents.on('will-redirect', (event, url) => {
-        if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
-            log.log('Blocked redirect to', url);
-            event.preventDefault();
-        } else {
-            handleOAuthCallback(url);
-        }
-    });
+        oauthWindow.webContents.on('will-redirect', (event, url) => {
+            if (!allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
+                log.log('Blocked redirect to', url);
+                event.preventDefault();
+            } else {
+                log.log('will-redirect to', url);
+                handleOAuthCallback(url);
+            }
+        });
+    }
 
     oauthWindow.webContents.setWindowOpenHandler(({ url }) => {
         if (allowedUrlPrefixes.some((prefix) => url.startsWith(prefix))) {
@@ -199,12 +216,14 @@ export async function startOauth(
     const { code_verifier, code_challenge } = generatePKCE();
     const csrfGaurd = crypto.randomUUID();
 
+    storePkce(csrfGaurd, provider, code_verifier);
+
     const params = new URLSearchParams({
         client_id: config.getClientId(provider),
         redirect_uri: buildRedirectUri(provider),
-        response_type: 'code',
         state: csrfGaurd,
         code_challenge,
+        // response_type: 'code',
         code_challenge_method: 'S256',
     });
 
@@ -222,6 +241,7 @@ export async function exchangeCodeForToken(
     code_verifier: string,
     callbacks: OAuthCallbacks,
 ) {
+    log.log('auth.exchangeCodeForToken caling getClientSecret');
     const clientSecret = await getClientSecret(provider);
     if (!clientSecret) {
         log.log('exchangeCodeForToken: do not have client secret, reauthorisation required')
@@ -315,6 +335,7 @@ async function handleDeepLinkUrl(urlStr: string, mainWindow: BrowserWindow, call
 
         const pkceEntry = getPkce(state);
         if (!pkceEntry || pkceEntry.provider !== provider) {
+            log.log(`pkce state mismatch for provider ${provider}: url state=${state} vs local=${pkceEntry}`);
             mainWindow.webContents.send('oauth-error', { error: 'invalid_state' });
             return;
         }

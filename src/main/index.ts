@@ -5,7 +5,7 @@ import path from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import icon from '../../resources/icon.png?asset';
-import log from '@shared/logger';
+import log from './logger';
 import { config } from './config';
 import { initIpc } from './ipc-main-bridge';
 import { handleDeepLinks, storeActivationKey } from './auth';
@@ -14,7 +14,9 @@ import { enableRendererDependencyLogging, enableRequestLogging } from './log-req
 import customProtocol from './custom-protocol';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
-customProtocol.init();
+if (!config.VITE_DEV_MODE) {
+  customProtocol.init();
+}
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -24,7 +26,13 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-// Main entry
+app.on('window-all-closed', () => {
+  log.log('All windows closed');
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => log.log('App quitting...'));
+
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('space.goddards.lee.electron-secure-test');
 
@@ -32,7 +40,10 @@ app.whenReady().then(() => {
 
   handleDeepLinks(mainWindow);
 
-  customProtocol.register();
+  if (!config.VITE_DEV_MODE) {
+    customProtocol.register();
+  }
+
   initIpc(mainWindow);
   initAutoUpdates(mainWindow)
 
@@ -58,17 +69,6 @@ app.whenReady().then(() => {
 
   if (config.VITE_DEV_MODE) app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window));
 });
-
-// Quit when all windows closed except macOS
-app.on('window-all-closed', () => {
-  log.log('All windows closed');
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('before-quit', () => log.log('App quitting...'));
-
-
-/* *************** Functions *************** */
 
 
 function getMainWindowOptions() {

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import mime from 'mime';
 import { app, net, protocol } from 'electron';
 
-import log from '@shared/logger';
+import log from './logger';
 import { config } from './config';
 
 

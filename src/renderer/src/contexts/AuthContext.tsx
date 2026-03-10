@@ -2,7 +2,7 @@ import { createContext, useContext, createSignal, onMount, type JSX, Match, Swit
 import { api } from '@renderer/renderer-bridge';
 
 import { type OAuthTokenResponseBad } from '@shared/oauth-types';
-import log from '@shared/logger';
+import log from '@renderer/lib/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
@@ -47,7 +47,7 @@ export function AuthProvider(props): JSX.Element {
 
             default:
                 showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                api.oauthLogin(selectedProvider());
+                // api.oauthLogin(selectedProvider());
                 break;
         }
     });
@@ -74,8 +74,8 @@ export function AuthProvider(props): JSX.Element {
             // Already activated so start OAuth flow
             if (clientSecret !== null) {
                 if (!provider) throw new Error('No provider')
-
                 setSelectedProvider(provider);
+                log.log('AuthContext.login with', provider);
                 await api.oauthLogin(provider);
                 setLoading(false);
             }
@@ -106,7 +106,9 @@ export function AuthProvider(props): JSX.Element {
                     <ActivationModal
                         provider={selectedProvider()}
                         onSuccess={async () => {
+                            log.log('AuthContext.ActivationModal.onSuccess enter with', selectedProvider());
                             setShowActivationModal(false);
+                            log.log('AuthContext.ActivationModal.onSuccess call oauthLogin with', selectedProvider());
                             await api.oauthLogin(selectedProvider());
                             setLoading(false);
                         }}

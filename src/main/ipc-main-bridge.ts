@@ -2,7 +2,7 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import keytar from 'keytar';
 import { startOauth, OAuthCallbacks } from './auth';
-import log from '@shared/logger';
+import log from './logger';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 export function initIpc(mainWindow: BrowserWindow) {
@@ -10,6 +10,7 @@ export function initIpc(mainWindow: BrowserWindow) {
 
     ipcMain.on('oauth-login', (_event, provider: keyof typeof OAUTH_PROVIDERS) => {
         if (!provider) throw new Error('No provider provided to ipc-main-bridge.oauth-login');
+        log.log('ipc-main-bridge.oauth-login enter with ', provider);
         startOauth(
             provider,
             {
