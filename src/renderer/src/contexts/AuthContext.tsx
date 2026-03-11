@@ -1,7 +1,5 @@
 import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
-
-import { type OAuthTokenResponseBad } from '@shared/oauth-types';
 import log from '@renderer/lib/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
@@ -13,7 +11,8 @@ type AuthContextType = {
     selectedProvider: () => keyof typeof OAUTH_PROVIDERS;
     login: (provider: keyof typeof OAUTH_PROVIDERS) => Promise<void>;
     logout: () => Promise<void>;
-}
+    getToken: () => Promise<string | null>;
+};
 
 const AuthContext = createContext<AuthContextType>();
 
@@ -25,92 +24,93 @@ export function AuthProvider(props): JSX.Element {
         Object.keys(OAUTH_PROVIDERS)[0] as keyof typeof OAUTH_PROVIDERS
     );
 
-    api.onOAuthSuccess(() => {
-        setAuthorised(true);
-        setLoading(false);
-        showToast('Login successful!', 'success', 3000);
-    });
-
-    api.onOAuthError(async (errorMsg: OAuthTokenResponseBad) => {
-        log.log('OAuth error received:', errorMsg);
-        setLoading(false);
-
-        switch (errorMsg.error) {
-            case 'incorrect_client_credentials':
-                await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION, selectedProvider());
-                setShowActivationModal(true);
-                break;
-
-            case 'access_denied':
-                showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                break;
-
-            default:
-                showToast('Login failed: ' + errorMsg.error_description, 'error', 5000);
-                // api.oauthLogin(selectedProvider());
-                break;
-        }
-    });
-
-    api.onRequireActivation(() => {
-        setShowActivationModal(true);
-    });
-
-    const logout = async () => {
-        log.log('logout')
-        await api.deletePassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_SESSION_TOKEN, selectedProvider());
-        setAuthorised(false);
-    }
-
     const login = async (provider: keyof typeof OAUTH_PROVIDERS) => {
-        log.log('AuthContext.login  enter with', provider)
         setLoading(true);
+        setSelectedProvider(provider);
 
         try {
-            // Check if activation secret exists in Keytar
-            const clientSecret = await api.getPassword(import.meta.env.VITE_SERVICE_NAME, import.meta.env.VITE_ACCOUNT_ACTIVATION, selectedProvider());
-            log.log('AuthContext.login got client secret')
-
-            // Already activated so start OAuth flow
-            if (clientSecret !== null) {
-                if (!provider) throw new Error('No provider')
-                setSelectedProvider(provider);
-                log.log('AuthContext.login with', provider);
-                await api.oauthLogin(provider);
-                setLoading(false);
+            const cachedToken = await api.getToken(provider); // string | null
+            if (cachedToken) {
+                setAuthorised(true);
+                log.log('Using cached token:', cachedToken);
+                showToast('Auto-login via cached token', 'success', 3000);
+                return;
+            } else {
+                setAuthorised(false)
+                log.log('No valid cached token, showing login screen')
             }
 
-            // Not activated so show activation modal
-            else {
-                setShowActivationModal(true);
-                setLoading(false);
-            }
-        }
+            log.log('No cached token, triggering OAuth login for', provider);
+            const token = await api.oauthLogin(provider); // StoredToken
 
-        catch (err) {
-            showToast('Login failed: ' + err, 'error');
+            if (token?.access_token) {
+                setAuthorised(true);
+                showToast('Login successful!', 'success', 3000);
+                log.log('Logged in, token:', token.access_token);
+            } else {
+                setAuthorised(false);
+                showToast('Login failed', 'error', 5000);
+            }
+
+        } catch (err) {
+            setAuthorised(false);
+            showToast('Login error: ' + err, 'error', 5000);
+            log.error('Login exception:', err);
+        } finally {
             setLoading(false);
         }
     };
 
-    onMount(() => {
-        // Login on mount
-        login(selectedProvider());
+    const logout = async () => {
+        setLoading(true);
+        try {
+            await api.logout(selectedProvider());
+            setAuthorised(false);
+            showToast('Logged out', 'success', 3000);
+            log.log('Logged out');
+        } catch (err) {
+            showToast('Logout error: ' + err, 'error', 5000);
+            log.error('Logout exception:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getToken = async (): Promise<string | null> => {
+        try {
+            const token = await api.getToken(selectedProvider());
+            if (token) {
+                log.log('Current token:', token);
+                return token;
+            } else {
+                log.log('No token available for provider', selectedProvider());
+                return null;
+            }
+        } catch (err) {
+            log.error('GetToken exception:', err);
+            return null;
+        }
+    };
+
+    onMount(async () => {
+        const token = await getToken();
+        if (token) {
+            setAuthorised(true);
+            log.log('Silent login via cached token:', token);
+        } else {
+            log.log('No cached token, user must login manually');
+        }
     });
 
-    // Guard children 
     return (
-        <AuthContext.Provider value={{ authorised, loading, login, logout, selectedProvider }}>
+        <AuthContext.Provider value={{ authorised, loading, login, logout, getToken, selectedProvider }}>
             <Switch>
                 <Match when={showActivationModal()}>
                     <ActivationModal
                         provider={selectedProvider()}
                         onSuccess={async () => {
-                            log.log('AuthContext.ActivationModal.onSuccess enter with', selectedProvider());
                             setShowActivationModal(false);
-                            log.log('AuthContext.ActivationModal.onSuccess call oauthLogin with', selectedProvider());
-                            await api.oauthLogin(selectedProvider());
-                            setLoading(false);
+                            await login(selectedProvider());
                         }}
                     />
                 </Match>
