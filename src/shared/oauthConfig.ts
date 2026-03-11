@@ -11,7 +11,7 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
         icon: GitHubIcon,
         authUrl: "https://github.com/login/oauth/authorize",
         tokenUrl: "https://github.com/login/oauth/access_token",
-        scopes: ["read:user", "repo"],
+        scopes: ["read:user"],
         clientId: config.getClientId('github'),
         requiresClientSecret: true,
         port: 3099,
