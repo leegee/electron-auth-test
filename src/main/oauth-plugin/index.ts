@@ -1,4 +1,4 @@
-// src/main/ilb/oauth2.ts
+// src/main/oauth-plugin/index.ts
 
 import http from "node:http"
 import crypto from "node:crypto"

@@ -1,4 +1,4 @@
-// src/main/ipc-main-bridge.ts
+// src/main/oauth-plugin/ipc-main-bridge.ts
 import { ipcMain } from 'electron';
 
 import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
