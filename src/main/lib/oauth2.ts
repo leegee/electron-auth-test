@@ -8,14 +8,16 @@ import keytar from "keytar"
 import type { ProviderConfig, StoredToken } from "@shared/oauth-types"
 import type { OAuthProviderConfig } from "../../shared/oauthConfig"
 import log from "../logger"
+import { decryptActivationKey } from "../crypt"
 
 export interface OAuthPluginConfig {
     serviceName: string
     secretServiceName: string
-    providers: OAuthProviderConfig
+    providers: OAuthProviderConfig,
+    buildPassword: string
 }
 
-let loginInProgress = false
+let loginInProgressMap = new Set<string>();
 
 function base64url(buffer: Buffer) {
     return buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
@@ -204,9 +206,9 @@ export class ElectronOAuthPlugin {
     async login(providerName: string): Promise<StoredToken | undefined> {
         const provider = this.config.providers[providerName];
         if (!provider) throw new Error(`Unknown provider: ${providerName}`);
-        if (loginInProgress) throw new Error("Another OAuth login is in progress");
+        if (loginInProgressMap.has(providerName)) throw new Error("Another OAuth login is in progress");
 
-        loginInProgress = true;
+        loginInProgressMap.add(providerName);
 
         try {
             let clientSecret: string | undefined;
@@ -229,7 +231,7 @@ export class ElectronOAuthPlugin {
             return token;
         }
         finally {
-            loginInProgress = false;
+            loginInProgressMap.delete(providerName);
         }
     }
 
@@ -372,5 +374,26 @@ export class ElectronOAuthPlugin {
     async deleteClientSecret(providerName: string): Promise<boolean> {
         log.log('deleteClientSecret', this.config.serviceName, providerName)
         return await keytar.deletePassword(this.config.secretServiceName, providerName);
+    }
+
+    async activate(providerName: string, activationKey: string) {
+        log.log("Received activate-app", providerName);
+
+        const providerSecret = await decryptActivationKey(
+            activationKey,
+            this.config.buildPassword,
+        );
+
+        if (providerSecret.provider !== providerName) {
+            log.log(`activation provider mismatch: wanted ${providerName} but key contained ${providerSecret.provider}`);
+            return {
+                success: false,
+                error: "Activation key provider mismatch"
+            };
+        }
+
+        await this.setClientSecret(providerName, providerSecret.secret);
+
+        return { success: true };
     }
 }
