@@ -20,20 +20,6 @@ export function initIpc(mainWindow: BrowserWindow) {
     );
 
     ipcMain.handle("oauth-login", async (_e, providerName: string) => {
-        // Pre-flight: check if provider requires client secret
-        const provider = OAUTH_PROVIDERS[providerName];
-        if (!provider) throw new Error(`Unknown provider: ${providerName}`);
-
-        if (provider.requiresClientSecret) {
-            const secret = await oauthPlugin.getClientSecret(providerName);
-            if (!secret) {
-                // Signal UI to show ActivationModal
-                mainWindow.webContents.send("oauth-require-activation", providerName);
-                return { success: false, activationRequired: true };
-            }
-        }
-
-        // Secret is present, proceed to login
         const token = await oauthPlugin.login(providerName);
         return { success: !!token, token };
     });
