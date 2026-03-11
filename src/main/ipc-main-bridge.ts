@@ -20,8 +20,15 @@ export function initIpc(mainWindow: BrowserWindow) {
     );
 
     ipcMain.handle("oauth-login", async (_e, providerName: string) => {
-        const token = await oauthPlugin.login(providerName);
-        return { success: !!token, token };
+        try {
+            const token = await oauthPlugin.login(providerName);
+            return { success: !!token, token };
+        } catch (err) {
+            return {
+                success: false,
+                error: (err as Error).message
+            };
+        }
     });
 
     ipcMain.handle("oauth-get-token", async (_e, providerName: string) => {
