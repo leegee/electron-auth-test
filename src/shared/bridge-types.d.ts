@@ -1,5 +1,5 @@
 import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
-import type { StoredToken } from '../main/lib/oauth2'
+import type { StoredToken } from '../main/oauth-plugin'
 import type { OAuthTokenResponseBad } from './oauth-types';
 
 export interface KeytarApi {

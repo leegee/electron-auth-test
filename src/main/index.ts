@@ -8,11 +8,10 @@ import { config } from '@shared/config';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 import icon from '../../resources/icon.png?asset';
 import log from './logger';
-import { initIpc } from './ipc-main-bridge';
+import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
 import { enableRendererDependencyLogging, enableRequestLogging } from './log-requests';
 import customProtocol from './custom-protocol';
-import { ElectronOAuthPlugin } from './lib/oauth2';
 
 if (!is.dev) customProtocol.init();
 
@@ -44,8 +43,8 @@ if (!app.requestSingleInstanceLock()) {
       },
       (providerName) => mainWindow.webContents.send("oauth-require-activation", providerName),
     );
+    oauthPlugin.initIpc();
 
-    initIpc(oauthPlugin);
     initAutoUpdates(mainWindow);
 
     if (is.dev) {

@@ -2,9 +2,9 @@
 import { ipcMain } from 'electron';
 
 import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
-import type { ElectronOAuthPlugin } from '../main/lib/oauth2';
+import type { ElectronOAuthPlugin } from '.';
 
-export function initIpc(oauthPlugin: ElectronOAuthPlugin) {
+export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
     ipcMain.handle("activate-app", async (_event, activationKey: string, provider: keyof typeof OAUTH_PROVIDERS) => {
         try {
             return await oauthPlugin.activate(provider, activationKey);
