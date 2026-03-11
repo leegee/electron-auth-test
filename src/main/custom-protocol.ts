@@ -6,7 +6,7 @@ import mime from 'mime';
 import { app, net, protocol } from 'electron';
 
 import log from './logger';
-import { config } from './config';
+import { config } from '../shared/config';
 
 
 function _nodeStreamToWebStream(nodeStream: fs.ReadStream): ReadableStream<Uint8Array> {

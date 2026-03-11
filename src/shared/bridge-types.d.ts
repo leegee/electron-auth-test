@@ -1,5 +1,6 @@
-import type { OAuthTokenResponseBad } from './oauth-types';
 import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import type { StoredToken } from '../main/lib/oauth2'
+import type { OAuthTokenResponseBad } from './oauth-types';
 
 export interface KeytarApi {
     getPassword(service: string, account: string, provider: keyof typeof OAUTH_PROVIDERS): Promise<string | null>;
@@ -7,10 +8,9 @@ export interface KeytarApi {
 }
 
 export interface OAuthApi {
-    oauthLogin(string: keyof typeof OAUTH_PROVIDERS): void;
-    onRequireActivation(cb: () => void): void;
-    onOAuthSuccess(cb: () => void): void;
-    onOAuthError(cb: (err: OAuthTokenResponseBad) => void): void;
+    oauthLogin(string: keyof typeof OAUTH_PROVIDERS): Promise<StoredToken>;
+    getToken(provider: keyof typeof OAUTH_PROVIDERS): Promise<StoredToken | null>;
+    logout(provider: keyof typeof OAUTH_PROVIDERS): Promise<boolean>;
 }
 
 export interface ActivationApi {

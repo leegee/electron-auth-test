@@ -2,7 +2,7 @@ import { createSignal, For, type JSX } from 'solid-js'
 import { Transition } from 'solid-transition-group'
 import './Toast.css'
 
-type ToastType = 'success' | 'error' | 'info'
+type ToastType = 'success' | 'error' | 'info' | 'warning'
 
 type Toast = {
     id: number

@@ -2,7 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron';
 // import 'electron-log/preload';
 
 import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
-import type { OAuthTokenResponseBad } from '../shared/oauth-types';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
 const keytarApi: KeytarApi = {
@@ -10,13 +9,10 @@ const keytarApi: KeytarApi = {
   deletePassword: (service, account, provider) => ipcRenderer.send('delete-password', service, account + '-' + provider),
 };
 
-// No need to return unsubscribed functions afaict
 const oauthApi: OAuthApi = {
-  oauthLogin: (provider: keyof typeof OAUTH_PROVIDERS) => ipcRenderer.send('oauth-login', provider),
-  onRequireActivation: (cb) => ipcRenderer.on('require-activation', cb),
-  onOAuthSuccess: (cb: () => void) => ipcRenderer.on('oauth-success', () => cb()),
-  onOAuthError: (cb: (payload: OAuthTokenResponseBad) => void) =>
-    ipcRenderer.on('oauth-error', (_event, payload: OAuthTokenResponseBad) => cb(payload)),
+  oauthLogin: (provider: keyof typeof OAUTH_PROVIDERS) => ipcRenderer.invoke('oauth-login', provider),
+  getToken: (provider: keyof typeof OAUTH_PROVIDERS) => ipcRenderer.invoke('oauth-get-token', provider),
+  logout: (provider: keyof typeof OAUTH_PROVIDERS) => ipcRenderer.invoke('oauth-logout', provider),
 };
 
 const activationApi: ActivationApi = {

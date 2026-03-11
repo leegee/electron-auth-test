@@ -1,27 +1,74 @@
-// src\main\ipc-main-bridge.ts
-import { BrowserWindow, ipcMain } from 'electron';
-import keytar from 'keytar';
-import { startOauth, OAuthCallbacks } from './auth';
-import log from './logger';
+// src/main/ipc-main-bridge.ts
+import { type BrowserWindow, ipcMain } from 'electron';
+
+import { ElectronOAuthPlugin } from '../main/lib/oauth2';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import { config } from '@shared/config';
+import log from './logger';
+import { decryptActivationKey } from './crypt';
 
 export function initIpc(mainWindow: BrowserWindow) {
-    log.log('ipc-main-bridge.oauth-login');
+    const oauthPlugin = new ElectronOAuthPlugin(
+        {
+            serviceName: config.VITE_SERVICE_NAME,
+            secretServiceName: config.VITE_SECRET_SERVICE_NAME, // rename
+            providers: OAUTH_PROVIDERS
+        },
+        (providerName) => {
+            mainWindow.webContents.send("oauth-require-activation", providerName);
+        }
+    );
 
-    ipcMain.on('oauth-login', (_event, provider: keyof typeof OAUTH_PROVIDERS) => {
-        if (!provider) throw new Error('No provider provided to ipc-main-bridge.oauth-login');
-        log.log('ipc-main-bridge.oauth-login enter with ', provider);
-        startOauth(
-            provider,
-            {
-                onSuccess: () => mainWindow.webContents.send('oauth-success'),
-                onError: (err) => mainWindow.webContents.send('oauth-error', err),
-                onRequireActivation: () => mainWindow.webContents.send('require-activation'),
-            } as OAuthCallbacks)
+    ipcMain.handle("oauth-login", async (_e, providerName: string) => {
+        // Pre-flight: check if provider requires client secret
+        const provider = OAUTH_PROVIDERS[providerName];
+        if (!provider) throw new Error(`Unknown provider: ${providerName}`);
+
+        if (provider.requiresClientSecret) {
+            const secret = await oauthPlugin.getClientSecret(providerName);
+            if (!secret) {
+                // Signal UI to show ActivationModal
+                mainWindow.webContents.send("oauth-require-activation", providerName);
+                return { success: false, activationRequired: true };
+            }
+        }
+
+        // Secret is present, proceed to login
+        const token = await oauthPlugin.login(providerName);
+        return { success: !!token, token };
     });
 
-    ipcMain.handle('keytar-get-password', async (_event, service: string, account: string) => {
-        log.log('ipc-main-bridge.keytar-get-password for', service, account);
-        return keytar.getPassword(service, account);
+    ipcMain.handle("oauth-get-token", async (_e, providerName: string) => {
+        return await oauthPlugin.getToken(providerName);
     });
+
+    ipcMain.handle("oauth-logout", async (_e, providerName: string) => {
+        await oauthPlugin.logout(providerName);
+        return true;
+    });
+
+    ipcMain.handle("store-client-secret", async (_e, providerName: string, secret: string) => {
+        await oauthPlugin.setClientSecret(providerName, secret);
+        return true;
+    });
+
+    ipcMain.handle('activate-app', async (_event, activationKey: string, provider: keyof typeof OAUTH_PROVIDERS) => {
+        try {
+            log.log('Received activate-app', provider);
+
+            const providerSecret = await decryptActivationKey(activationKey, config.VITE_BUILD_PASSWORD);
+            if (providerSecret.provider !== provider) {
+                log.log(`ipc-main-bridge.activate-app provider mismatch: wanted ${provider} but key contained ${providerSecret.provider}`)
+                return { success: false, error: 'Activation key provider mismatch' };
+            }
+
+            await oauthPlugin.setClientSecret(provider, providerSecret.secret);
+            return { success: true };
+        }
+        catch (err) {
+            log.error('Activation failed for provder', provider, err);
+            return { success: false, error: (err as Error).message };
+        }
+    });
+
 }

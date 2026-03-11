@@ -1,25 +1,29 @@
-import { createContext, useContext, createSignal, onMount, type JSX, Match, Switch } from 'solid-js';
+// src/renderer/contexts/AuthContext.tsx
+import { createContext, useContext, createSignal, type JSX } from 'solid-js';
 import { api } from '@renderer/renderer-bridge';
-import log from '@renderer/lib/logger';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import log from '../lib/logger';
 
-type AuthContextType = {
+export type AuthContextType = {
     authorised: () => boolean;
     loading: () => boolean;
     selectedProvider: () => keyof typeof OAUTH_PROVIDERS;
     login: (provider: keyof typeof OAUTH_PROVIDERS) => Promise<void>;
     logout: () => Promise<void>;
-    getToken: () => Promise<string | null>;
 };
 
 const AuthContext = createContext<AuthContextType>();
 
-export function AuthProvider(props): JSX.Element {
+interface AuthProviderProps {
+    children: JSX.Element;
+}
+
+export function AuthProvider(props: AuthProviderProps): JSX.Element {
     const [authorised, setAuthorised] = createSignal(false);
     const [loading, setLoading] = createSignal(false);
-    const [showActivationModal, setShowActivationModal] = createSignal(false);
+    const [activationRequired, setActivationRequired] = createSignal(false);
     const [selectedProvider, setSelectedProvider] = createSignal<keyof typeof OAUTH_PROVIDERS>(
         Object.keys(OAUTH_PROVIDERS)[0] as keyof typeof OAUTH_PROVIDERS
     );
@@ -29,33 +33,42 @@ export function AuthProvider(props): JSX.Element {
         setSelectedProvider(provider);
 
         try {
-            const cachedToken = await api.getToken(provider); // string | null
-            if (cachedToken) {
+            // Attempt auto-login with cached token
+            const token = await api.getToken(provider);
+            if (token) {
+                log.log('AuthContext has token', token);
                 setAuthorised(true);
-                log.log('Using cached token:', cachedToken);
                 showToast('Auto-login via cached token', 'success', 3000);
                 return;
-            } else {
-                setAuthorised(false)
-                log.log('No valid cached token, showing login screen')
             }
 
-            log.log('No cached token, triggering OAuth login for', provider);
-            const token = await api.oauthLogin(provider); // StoredToken
+            log.log('AuthContext has no token');
 
-            if (token?.access_token) {
+            // Trigger OAuth flow
+            const result = await api.oauthLogin(provider);
+            log.log('AuthContext oauthLogin rv', result);
+
+            if (result?.error === 'incorrect_client_credentials' || result.activationRequired) {
+                // Activation required before login
+                log.log('AuthContext requires activation');
+                setActivationRequired(true);
+                setAuthorised(false);
+                showToast('Activation required for this account', 'warning', 4000);
+            } else if (result?.error) {
+                // Other login errors
+                log.warn('AuthContext api.oauthLogin errored', result);
+                setAuthorised(false);
+                showToast(`Login failed: ${result.error}`, 'error', 5000);
+            } else {
+                // Successful login
+                log.log('AuthContext api.oauthLogin logged in');
                 setAuthorised(true);
                 showToast('Login successful!', 'success', 3000);
-                log.log('Logged in, token:', token.access_token);
-            } else {
-                setAuthorised(false);
-                showToast('Login failed', 'error', 5000);
             }
-
         } catch (err) {
+            log.log('AuthContext errored', err);
             setAuthorised(false);
-            showToast('Login error: ' + err, 'error', 5000);
-            log.error('Login exception:', err);
+            showToast(`Login error: ${(err as Error).message}`, 'error', 5000);
         } finally {
             setLoading(false);
         }
@@ -67,57 +80,26 @@ export function AuthProvider(props): JSX.Element {
             await api.logout(selectedProvider());
             setAuthorised(false);
             showToast('Logged out', 'success', 3000);
-            log.log('Logged out');
         } catch (err) {
-            showToast('Logout error: ' + err, 'error', 5000);
-            log.error('Logout exception:', err);
+            showToast(`Logout error: ${(err as Error).message}`, 'error', 5000);
         } finally {
             setLoading(false);
         }
     };
 
-    const getToken = async (): Promise<string | null> => {
-        try {
-            const token = await api.getToken(selectedProvider());
-            if (token) {
-                log.log('Current token:', token);
-                return token;
-            } else {
-                log.log('No token available for provider', selectedProvider());
-                return null;
-            }
-        } catch (err) {
-            log.error('GetToken exception:', err);
-            return null;
-        }
-    };
-
-    onMount(async () => {
-        const token = await getToken();
-        if (token) {
-            setAuthorised(true);
-            log.log('Silent login via cached token:', token);
-        } else {
-            log.log('No cached token, user must login manually');
-        }
-    });
-
     return (
-        <AuthContext.Provider value={{ authorised, loading, login, logout, getToken, selectedProvider }}>
-            <Switch>
-                <Match when={showActivationModal()}>
-                    <ActivationModal
-                        provider={selectedProvider()}
-                        onSuccess={async () => {
-                            setShowActivationModal(false);
-                            await login(selectedProvider());
-                        }}
-                    />
-                </Match>
-                <Match when={!showActivationModal()}>
-                    {props.children}
-                </Match>
-            </Switch>
+        <AuthContext.Provider value={{ authorised, loading, login, logout, selectedProvider }}>
+            {activationRequired() ? (
+                <ActivationModal
+                    provider={selectedProvider()}
+                    onSuccess={async () => {
+                        setActivationRequired(false);
+                        await login(selectedProvider());
+                    }}
+                />
+            ) : (
+                props.children
+            )}
         </AuthContext.Provider>
     );
 }

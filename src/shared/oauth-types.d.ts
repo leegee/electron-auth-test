@@ -1,10 +1,28 @@
+export interface ProviderConfig {
+    name: string;
+    icon: string;
+    clientId: string
+    requiresClientSecret?: boolean
+    authUrl: string
+    port?: number
+    tokenUrl: string
+    scopes: string[]
+    extraAuthParams?: Record<string, string>
+    refreshTokenUrl?: string
+}
+
+export interface StoredToken {
+    access_token: string
+    refresh_token?: string
+    expires_in?: number
+    obtained_at?: number
+    [key: string]: any
+}
 
 export interface OAuthTokenSuccess {
     access_token: string;
     token_type?: string;
     scope?: string;
-
-    // optional fields used by Google and maybe others
     expires_in?: number;
     refresh_token?: string;
     id_token?: string;
