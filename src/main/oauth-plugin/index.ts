@@ -9,7 +9,6 @@ import type { ProviderConfig, StoredToken } from "@shared/oauth-types"
 import type { OAuthProviderConfig } from "../../shared/oauthConfig"
 import log from "../logger"
 import { decryptActivationKey } from "../crypt"
-import { initAutoUpdates } from "../auto-updates"
 import { initAuthIpc } from "./ipc-main-bridge"
 
 export interface OAuthPluginConfig {
