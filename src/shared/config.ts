@@ -20,15 +20,14 @@ function normaliseBoolean(value?: string | boolean, defaultVal = false): boolean
 }
 
 export const config = {
-    VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electronelectron-secure-test'),
-    VITE_BUILD_PASSWORD: getEnv('VITE_BUILD_PASSWORD'),
     VITE_DEV_MODE: normaliseBoolean(getEnv('VITE_DEV_MODE', false)),
-    VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
+    VITE_BUILD_PASSWORD: getEnv('VITE_BUILD_PASSWORD'),
+    VITE_SERVICE_NAME: getEnv('VITE_SERVICE_NAME', 'electronelectron-secure-test'),
     VITE_CACHE_USER_SESSIONS: normaliseBoolean(getEnv('VITE_CACHE_USER_SESSIONS', false)),
     VITE_GITHUB_CLIENT_ID: getEnv('VITE_GITHUB_CLIENT_ID'),
-    // VITE_ACTIVATION_FILE_PATH,
     VITE_SESSION_TOKEN: getEnv('VITE_SESSION_TOKEN', 'oauth-token'),
     VITE_SECRET_SERVICE_NAME: getEnv('VITE_SECRET_SERVICE_NAME', 'account-activation'),
+    // VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
 
     getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => {
         const varName = 'VITE_' + provider.toUpperCase() + '_CLIENT_ID';

@@ -1,3 +1,4 @@
+/*
 import url from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -98,4 +99,4 @@ function register() {
 
 export default { register, init }
 
-
+*/

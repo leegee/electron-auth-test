@@ -7,3 +7,4 @@ out
 .env.production
 .env.development
 activation-key*
+src/main/custom-protocol.ts
