@@ -121,7 +121,7 @@ export class ElectronOAuthPlugin {
             for (const provider of Object.keys(this.config.providers)) {
                 promises.push(keytar.deletePassword(this.config.secretServiceName, provider));
                 promises.push(keytar.deletePassword(this.config.serviceName, provider));
-                // localStorage.removeItem(this.getUserServiceName(provider));
+                promises.push(keytar.deletePassword(this.userStoreServiceName, provider));
             }
         }
 
@@ -336,19 +336,11 @@ export class ElectronOAuthPlugin {
         return plainProviders;
     }
 
-    getUserServiceName(providerName: string) {
-        return this.userStoreServiceName + '-' + providerName;
-    }
 
     async getUserInfo(providerName: string): Promise<OAuthUserInfo | null> {
-        // Use keytar as persistent store
-        const storeKey = this.getUserServiceName(providerName);
-
-        // Try to get cached user from keytar
-        const storedUser = await keytar.getPassword(this.userStoreServiceName, storeKey);
+        const storedUser = await keytar.getPassword(this.userStoreServiceName, providerName);
         if (storedUser) return JSON.parse(storedUser);
 
-        // Get valid OAuth token
         const token = await this.getToken(providerName);
         if (!token?.access_token) return null;
 
@@ -371,11 +363,10 @@ export class ElectronOAuthPlugin {
             let userData = await res.json();
             if (provider.userInfoMapper) userData = provider.userInfoMapper(userData);
 
-            // Store user info securely in keytar
-            await keytar.setPassword(this.userStoreServiceName, storeKey, JSON.stringify(userData));
-
+            await keytar.setPassword(this.userStoreServiceName, providerName, JSON.stringify(userData));
             return userData;
-        } catch (err) {
+        }
+        catch (err) {
             log.error(`Failed to fetch user info for ${providerName}:`, err);
             return null;
         }
