@@ -1,7 +1,7 @@
 // src/main/oauth-plugin/ipc-main-bridge.ts
 import { ipcMain } from 'electron';
 
-import type { OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import type { OAUTH_PROVIDERS, OAuthProviderConfig } from 'src/main/oauth-plugin/oauth-config';
 import type { ElectronOAuthPlugin } from '.';
 
 export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
@@ -34,4 +34,6 @@ export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
         await oauthPlugin.setClientSecret(providerName, secret);
         return true;
     });
+
+    ipcMain.handle('oauth-providers', (): OAuthProviderConfig => oauthPlugin.getOauthProviders())
 }

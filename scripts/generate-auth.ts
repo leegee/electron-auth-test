@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import keytar from "keytar";
 
-import { decryptActivationKey, encryptActivationKey } from "../src/main/crypt";
+import { decryptActivationKey, encryptActivationKey } from "../src/main/oauth-plugin/oauth-crypt";
 
 const VITE_BUILD_PASSWORD = process.env.VITE_BUILD_PASSWORD;
 const VITE_ACTIVATION_FILE_PATH = process.env.VITE_ACTIVATION_FILE_PATH || "activation-key.json";

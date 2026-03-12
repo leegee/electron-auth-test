@@ -1,9 +1,10 @@
 import { createSignal } from 'solid-js';
 import { showToast } from './Toast';
 import { api } from '@renderer/renderer-bridge';
-import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
 
-type ActivationModalProps = {
+const OAUTH_PROVIDERS = await api.getOauthProviders();
+
+interface ActivationModalProps {
     onSuccess: () => void;
     provider: keyof typeof OAUTH_PROVIDERS;
 };
@@ -19,7 +20,10 @@ export function ActivationModal(props: ActivationModalProps) {
         }
 
         setLoading(true);
+
+        if (!props.provider) throw new Error("Provider is undefined");
         const res = await api.activateApp(key(), props.provider);
+
         setLoading(false);
 
         if (res.success) {

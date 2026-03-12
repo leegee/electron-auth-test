@@ -6,10 +6,10 @@ import crypto from "node:crypto"
 import { shell } from "electron"
 import keytar from "keytar"
 import type { ProviderConfig, StoredToken } from "@shared/oauth-types"
-import type { OAuthProviderConfig } from "../../shared/oauthConfig"
+import type { OAuthProviderConfig } from "./oauth-config"
 import log from "../logger"
-import { decryptActivationKey } from "../crypt"
-import { initAuthIpc } from "./ipc-main-bridge"
+import { decryptActivationKey } from "./oauth-crypt"
+import { initAuthIpc } from "./oauth-ipc-main"
 
 export interface OAuthPluginConfig {
     serviceName: string
@@ -103,110 +103,6 @@ export class ElectronOAuthPlugin {
     initIpc() {
         initAuthIpc(this);
     }
-
-    // async login(providerName: string): Promise<StoredToken | undefined> {
-    //     const provider = this.config.providers[providerName];
-    //     if (!provider) throw new Error(`Unknown provider: ${providerName}`);
-    //     if (loginInProgress) throw new Error("Another OAuth login is in progress");
-    //     loginInProgress = true;
-
-    //     const { verifier, challenge } = createPKCE();
-    //     const state = createState();
-    //     const port = provider.port || 30000 + Math.floor(Math.random() * 10000);
-    //     const redirectUrl = `http://127.0.0.1:${port}/callback`;
-
-    //     return new Promise<StoredToken | undefined>((resolve, reject) => {
-
-    //         let server: http.Server;
-
-    //         const cleanup = () => {
-    //             loginInProgress = false;
-    //             clearTimeout(timeout);
-    //             server?.close();
-    //         };
-
-    //         const finishSuccess = (token?: StoredToken) => {
-    //             cleanup();
-    //             resolve(token);
-    //         };
-
-    //         const finishError = (err: unknown) => {
-    //             cleanup();
-    //             reject(err);
-    //         };
-
-    //         const closeBrowser = (res: http.ServerResponse, message = "Login complete") => {
-    //             res.writeHead(200, { "Content-Type": "text/html" });
-    //             res.end(`<script>window.close()</script>${message}`);
-    //         };
-
-    //         const timeout = setTimeout(() => {
-    //             finishError(new Error("OAuth login timed out"));
-    //         }, 180_000);
-
-    //         server = http.createServer(async (req, res) => {
-    //             try {
-
-    //                 const url = new URL(req.url!, redirectUrl);
-    //                 if (url.pathname !== "/callback") return;
-
-    //                 const code = url.searchParams.get("code");
-    //                 const receivedState = url.searchParams.get("state");
-
-    //                 if (!code || receivedState !== state) {
-    //                     throw new Error("Invalid OAuth state");
-    //                 }
-
-    //                 let clientSecret: string | undefined;
-
-    //                 if (provider.requiresClientSecret) {
-    //                     clientSecret = await this.getClientSecret(providerName) || undefined;
-    //                     if (!clientSecret) {
-    //                         closeBrowser(res, "Activation required");
-    //                         this.onRequireActivation?.(providerName);
-    //                         return finishSuccess(undefined);
-    //                     }
-    //                 }
-
-    //                 const token = await exchangeCode(
-    //                     provider,
-    //                     code,
-    //                     verifier,
-    //                     redirectUrl,
-    //                     clientSecret
-    //                 );
-
-    //                 await keytar.setPassword(this.config.serviceName, providerName, JSON.stringify(token));
-
-    //                 closeBrowser(res);
-    //                 return finishSuccess(token);
-
-    //             } catch (err) {
-    //                 return finishError(err);
-    //             }
-    //         });
-
-    //         server.listen(port);
-
-    //         const authParams = new URLSearchParams({
-    //             client_id: provider.clientId,
-    //             redirect_uri: redirectUrl,
-    //             response_type: "code",
-    //             scope: provider.scopes.join(" "),
-    //             code_challenge: challenge,
-    //             code_challenge_method: "S256",
-    //             state,
-    //             ...(provider.extraAuthParams || {})
-    //         });
-
-    //         const authUrl = `${provider.authUrl}?${authParams.toString()}`;
-    //         log.log("OAuth opening browser for auth:", authUrl)
-    //         shell.openExternal(authUrl);
-    //     });
-    // }
-
-    //  Get stored token and refresh if expired
-
 
     async login(providerName: string): Promise<StoredToken | undefined> {
         const provider = this.config.providers[providerName];
@@ -400,5 +296,9 @@ export class ElectronOAuthPlugin {
         await this.setClientSecret(providerName, providerSecret.secret);
 
         return { success: true };
+    }
+
+    getOauthProviders(): OAuthProviderConfig {
+        return this.config.providers;
     }
 }

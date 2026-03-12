@@ -1,5 +1,5 @@
 
-import { type OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import { type OAUTH_PROVIDERS } from 'src/main/oauth-plugin/oauth-config';
 
 /**
  * Get environment variable as string.

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import { config } from '@shared/config';
-import { OAUTH_PROVIDERS } from '@shared/oauthConfig';
+import { OAUTH_PROVIDERS } from './oauth-plugin/oauth-config';
 import icon from '../../resources/icon.png?asset';
 import log from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';

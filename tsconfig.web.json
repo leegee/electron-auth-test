@@ -7,7 +7,8 @@
     "src/preload/*.d.ts",
     "src/shared/*.ts",
     "src/global.d.ts",
-    "./logger.ts"
+    "./logger.ts",
+    "src/main/**/*"
   ],
   "compilerOptions": {
     "composite": true,
