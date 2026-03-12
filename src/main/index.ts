@@ -6,8 +6,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import { config } from '@shared/config';
 import icon from '../../resources/icon.png?asset';
-import log from './logger';
-// import log, { enableRendererDependencyLogging, enableRequestLogging } from './logger';
+import log, { /*enableRendererDependencyLogging, enableRequestLogging */ } from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
 import customProtocol from './custom-protocol';
@@ -32,6 +31,7 @@ if (!app.requestSingleInstanceLock()) {
 
     if (!is.dev) customProtocol.register();
 
+    initAutoUpdates(mainWindow);
 
     new ElectronOAuthPlugin(mainWindow, {
       serviceName: config.VITE_SERVICE_NAME,
@@ -39,7 +39,10 @@ if (!app.requestSingleInstanceLock()) {
       buildPassword: config.VITE_BUILD_PASSWORD,
     }).init();
 
-    initAutoUpdates(mainWindow);
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+      log.warn('main: Navigation attempt to:', url);
+      event.preventDefault();
+    });
 
     if (is.dev) {
       // enableRequestLogging(mainWindow);
