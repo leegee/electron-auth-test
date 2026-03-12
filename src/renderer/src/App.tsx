@@ -34,8 +34,8 @@ export default function App(): JSX.Element {
             <Match when={!useAuth().authorised()}>
               <article class="absolute center middle border medium no-padding center-align middle-align ">
                 <div class="padding">
-                  <AuthButton />
                   <NotLoggedIn />
+                  <AuthButton />
                 </div>
               </article>
             </Match>
