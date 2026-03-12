@@ -13,6 +13,7 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
         clientId: config.getClientId('github'),
         requiresClientSecret: true,
         port: 3099,
+        userInfoUrl: "https://api.github.com/user",
 
     },
     google: {

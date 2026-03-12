@@ -5,7 +5,7 @@ import crypto from "node:crypto"
 
 import { shell } from "electron"
 import keytar from "keytar"
-import type { ProviderConfig, StoredToken } from "@shared/oauth-types"
+import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
 import { OAUTH_PROVIDERS, type OAuthProviderConfig } from "./oauth-config"
 import log from "../logger"
 import { decryptActivationKey } from "./oauth-crypt"
@@ -22,6 +22,7 @@ type OAuthPluginConfig = OAuthPluginArgs & { providers: OAuthProviderConfig };
 type LoginRV = {
     success?: boolean
     token?: StoredToken
+    user?: OAuthUserInfo | null
     activationRequired?: boolean
     error?: object
 }
@@ -103,13 +104,15 @@ function isTokenExpired(token: StoredToken) {
 }
 
 export class ElectronOAuthPlugin {
-    private config: OAuthPluginConfig
+    private config: OAuthPluginConfig;
+    private userStoreServiceName;
 
     constructor(config: OAuthPluginArgs) {
         this.config = {
             providers: OAUTH_PROVIDERS,
             ...config
         };
+        this.userStoreServiceName = this.config.serviceName + '-user';
     }
 
     initIpc() {
@@ -129,20 +132,22 @@ export class ElectronOAuthPlugin {
             log.log('oaouth.login provider.requiresClientSecret', provider.requiresClientSecret);
             if (provider.requiresClientSecret) {
                 const secret = await this.getClientSecret(providerName);
-                if (!secret) {
-                    log.log('oaouth.login no secret, require activation for', providerName);
-                    return { activationRequired: true };
-                }
-                log.log('oaouth.login got secret');
+                log.log(`oaouth.login got secret? ${secret ? 'yes' : 'no'} `);
+                if (!secret) return { activationRequired: true };
                 clientSecret = secret;
             }
 
             const token = await this.runOAuthFlow(provider, clientSecret);
-
             if (!token) return { error: { message: 'Token not returned from provider' } };
 
             await keytar.setPassword(this.config.serviceName, providerName, JSON.stringify(token));
-            return { success: true, token };
+
+            const user = await this.getUserInfo(providerName);
+            return {
+                success: true,
+                token,
+                user
+            };
         }
         finally {
             loginInProgressMap.delete(providerName);
@@ -314,5 +319,39 @@ export class ElectronOAuthPlugin {
 
     getOauthProviders(): OAuthProviderConfig {
         return this.config.providers;
+    }
+
+    async getUserInfo(providerName: string): Promise<OAuthUserInfo | null> {
+        const storedUser = await keytar.getPassword(this.userStoreServiceName, providerName);
+        if (storedUser) return JSON.parse(storedUser);
+
+        const token = await this.getToken(providerName);
+        if (!token?.access_token) return null;
+
+        const provider = this.config.providers[providerName];
+        if (!provider?.userInfoUrl) throw new Error(`Provider ${providerName} has no userInfoUrl`);
+
+        try {
+            const res = await fetch(provider.userInfoUrl, {
+                headers: {
+                    Authorization: `Bearer ${token.access_token}`,
+                    Accept: "application/json"
+                }
+            });
+
+            if (!res.ok) {
+                log.warn(`Failed to fetch user info for ${providerName}: ${res.status}`);
+                return null;
+            }
+
+            let userData = await res.json();
+            if (provider.userInfoMapper) userData = provider.userInfoMapper(userData);
+
+            await keytar.setPassword(this.userStoreServiceName, providerName, JSON.stringify(userData));
+            return userData;
+        } catch (err) {
+            log.error(`Failed to fetch user info for ${providerName}:`, err);
+            return null;
+        }
     }
 }

@@ -1,3 +1,9 @@
+export interface OAuthUserInfo {
+    id: string
+    email?: string
+    name?: string
+}
+
 export interface ProviderConfig {
     name: string;
     icon: string;
@@ -9,6 +15,8 @@ export interface ProviderConfig {
     scopes: string[]
     extraAuthParams?: Record<string, string>
     refreshTokenUrl?: string
+    userInfoUrl?: string
+    userInfoMapper?: (raw: any) => OAuthUserInfo;
 }
 
 export interface StoredToken {

@@ -1,6 +1,6 @@
 # electron-secure-test
 
-An Electron application with Solid and TypeScript
+An Electron / Solid / TypeScript example of PKCE OAuth2.0.
 
 1. Configure GitHub OAuth2.0 in [Developer Settings](https://github.com/settings/developers) 
 1. Configure Google OAuth2.0 at https://console.cloud.google.com/auth/clients and https://console.cloud.google.com/auth/clients (https://developers.google.com/identity/openid-connect/openid-connect)
