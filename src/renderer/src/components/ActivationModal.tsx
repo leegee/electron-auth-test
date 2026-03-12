@@ -42,6 +42,7 @@ export function ActivationModal(props: ActivationModalProps) {
             <p>You will only have to do this once.</p>
             <div class="field top-padding bottom-padding extra-padding">
                 <input
+                    autofocus={true}
                     type="text"
                     value={key()}
                     onInput={(e) => setKey(e.currentTarget.value)}
