@@ -42,6 +42,8 @@ if (process.env.CLEAN) {
         console.log('Delete keytar ', VITE_SECRET_SERVICE_NAME, provider);
         await keytar.deletePassword(VITE_SERVICE_NAME, provider);
         console.log('Delete keytar ', VITE_SERVICE_NAME, provider);
+        await keytar.deletePassword(VITE_SERVICE_NAME + '-user', provider);
+        console.log('Delete keytar ', VITE_SERVICE_NAME + '-user', provider);
     }
 
     console.info(`Cleaned credentials for ${VITE_SERVICE_NAME}`);
