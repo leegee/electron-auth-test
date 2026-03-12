@@ -29,42 +29,41 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
     const [loading, setLoading] = createSignal(false);
     const [activationRequired, setActivationRequired] = createSignal(false);
     const [providers, setProviders] = createSignal<Record<string, Provider>>({});
-    const [selectedProvider, setSelectedProvider] = createSignal<string | null>(null);
+    const [selectedProviderName, setSelectedProviderName] = createSignal<string | null>(null);
 
     onMount(async () => {
         try {
             const loadedProviders = await api.getOauthProviders();
             setProviders(loadedProviders);
-            setSelectedProvider(Object.keys(loadedProviders)[0] ?? null);
+            setSelectedProviderName(Object.keys(loadedProviders)[0] ?? null);
         } catch (err) {
             log.error('Failed to load OAuth providers', err);
         }
     });
 
-    const login = async (provider: string) => {
+    const login = async (providerName: string) => {
         setLoading(true);
-        setSelectedProvider(provider);
+        setSelectedProviderName(providerName);
 
         try {
-            const token = await api.getToken(provider);
+            const token = await api.getToken(providerName);
             if (token) {
                 setAuthorised(true);
                 showToast('Auto-login via cached token', 'success', 3000);
                 return;
             }
 
-            const loginRv = await api.oauthLogin(provider);
-            log.log('AuthContext.login rv from api.oauthLogin for', provider, loginRv)
+            const loginRv = await api.oauthLogin(providerName);
+            log.log('AuthContext.login rv from api.oauthLogin for', providerName, loginRv)
             if (loginRv?.error === 'incorrect_client_credentials' || loginRv.activationRequired) {
                 setActivationRequired(true);
                 setAuthorised(false);
-                showToast('Activation required for this account', 'warning', 4000);
             } else if (loginRv?.error) {
                 setAuthorised(false);
-                showToast(`Login failed: ${loginRv.error}`, 'error', 5000);
+                showToast(`Failed to sign in to ${providerName}: ${loginRv.error}`, 'error', 5000);
             } else {
                 setAuthorised(true);
-                showToast('Login successful!', 'success', 3000);
+                showToast(`Signed in to ${providerName}`, 'success', 3000);
             }
         } catch (err) {
             setAuthorised(false);
@@ -75,7 +74,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
     };
 
     const logout = async () => {
-        const provider = selectedProvider();
+        const provider = selectedProviderName();
         if (!provider) return;
 
         setLoading(true);
@@ -95,14 +94,14 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
 
     return (
         <AuthContext.Provider
-            value={{ authorised, loading, selectedProvider, login, logout, getProviders }}
+            value={{ authorised, loading, selectedProvider: selectedProviderName, login, logout, getProviders }}
         >
-            {activationRequired() && selectedProvider() ? (
+            {activationRequired() && selectedProviderName() ? (
                 <ActivationModal
-                    provider={selectedProvider()!} // guaranteed defined here
+                    provider={selectedProviderName()!} // guaranteed defined here
                     onSuccess={async () => {
                         setActivationRequired(false);
-                        await login(selectedProvider()!);
+                        await login(selectedProviderName()!);
                     }}
                 />
             ) : (
