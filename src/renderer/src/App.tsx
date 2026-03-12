@@ -1,4 +1,4 @@
-import { type JSX, Match, onMount, Switch } from 'solid-js'
+import { type JSX, Match, onMount, Show, Switch } from 'solid-js'
 
 import { initUpdateHandlers } from './lib/auto-updates'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -17,20 +17,29 @@ export default function App(): JSX.Element {
       <ToastRoot />
 
       <AuthProvider>
-        <nav class="top">
-          <div class="max row right-align">
-            <AuthButton />
-          </div>
-        </nav>
+        <Show when={useAuth().authorised()}>
+          <nav class="top">
+            <div class="max row right-align">
+              <AuthButton />
+            </div>
+          </nav>
+        </Show>
 
         <main class="responsive">
           <Switch>
             <Match when={useAuth().authorised()}>
               <LoggedIn />
             </Match>
+
             <Match when={!useAuth().authorised()}>
-              <NotLoggedIn />
+              <article class="absolute center middle border medium no-padding center-align middle-align ">
+                <div class="padding">
+                  <AuthButton />
+                  <NotLoggedIn />
+                </div>
+              </article>
             </Match>
+
           </Switch>
         </main>
       </AuthProvider>

@@ -74,7 +74,7 @@ export default function AuthButton() {
 
                 {/* FAB menu */}
                 <Show when={fabOpen()}>
-                    <menu class="no-wrap small-space left active fab-menu">
+                    <menu class="no-wrap right active ">
                         <For each={providerKeys()}>
                             {(key) => {
                                 const provider = auth.getProviders()[key];

@@ -1,6 +1,6 @@
 
 export default function NotLoggedIn() {
     return <article>
-        <h2>Please sign </h2>
+        <h2>Please sign in</h2>
     </article>
 }
