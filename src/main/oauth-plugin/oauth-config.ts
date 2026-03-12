@@ -14,10 +14,11 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
         requiresClientSecret: true,
         port: 3099,
         userInfoUrl: "https://api.github.com/user",
+        allowedImageHosts: ["https://avatars.githubusercontent.com"],
         userInfoMapper: (rawUserData: any) => ({
             id: rawUserData.id,
             name: rawUserData.name,
-            avatarUrl: rawUserData.avatarUrl
+            avatarUrl: rawUserData.avatar_url
         })
 
     },
@@ -34,5 +35,6 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
             prompt: "consent"
         },
         refreshTokenUrl: "https://oauth2.googleapis.com/token",
+        allowedImageHosts: [],
     },
 };

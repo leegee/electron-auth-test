@@ -51,6 +51,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
         try {
             const token = await api.getToken(providerName);
             if (token) {
+                setUserInfo(await api.getUserInfo(providerName));
                 setAuthorised(true);
                 showToast(`You have been signed into ${providerName}`, 'success', 3000);
                 return;

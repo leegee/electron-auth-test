@@ -3,7 +3,7 @@
 import http from "node:http"
 import crypto from "node:crypto"
 
-import { shell } from "electron"
+import { type BrowserWindow, shell } from "electron"
 import keytar from "keytar"
 
 import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
@@ -107,8 +107,10 @@ function isTokenExpired(token: StoredToken) {
 export class ElectronOAuthPlugin {
     private config: OAuthPluginConfig;
     private userStoreServiceName;
+    private mainWindow: BrowserWindow;
 
-    constructor(config: OAuthPluginArgs) {
+    constructor(mainWindow: BrowserWindow, config: OAuthPluginArgs) {
+        this.mainWindow = mainWindow;
         this.config = {
             providers: OAUTH_PROVIDERS,
             ...config
@@ -153,6 +155,7 @@ export class ElectronOAuthPlugin {
             await keytar.setPassword(this.config.serviceName, providerName, JSON.stringify(token));
 
             const user = await this.getUserInfo(providerName);
+            this.configureAllowedImageHosts(providerName);
             return {
                 success: true,
                 token,
@@ -162,6 +165,25 @@ export class ElectronOAuthPlugin {
         finally {
             loginInProgressMap.delete(providerName);
         }
+    }
+
+    private configureAllowedImageHosts(providerName: string) {
+        this.mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+            const csp = `
+            default-src 'self';
+            script-src 'self';
+            style-src 'self' 'unsafe-inline';
+            img-src 'self' data: ${OAUTH_PROVIDERS[providerName].allowedImageHosts.join(" ")};'
+            font-src 'self';
+            connect-src 'self';
+        `;
+            callback({
+                responseHeaders: {
+                    ...details.responseHeaders,
+                    'Content-Security-Policy': [csp]
+                }
+            });
+        });
     }
 
     private async runOAuthFlow(
@@ -362,7 +384,9 @@ export class ElectronOAuthPlugin {
             }
 
             let userData = await res.json();
+            log.log('Initial userData', userData)
             if (provider.userInfoMapper) userData = provider.userInfoMapper(userData);
+            log.log('Mapped  userData', userData)
 
             await keytar.setPassword(this.userStoreServiceName, providerName, JSON.stringify(userData));
             return userData;

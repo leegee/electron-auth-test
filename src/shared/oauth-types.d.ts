@@ -17,6 +17,7 @@ export interface ProviderConfig {
     refreshTokenUrl?: string
     userInfoUrl?: string
     userInfoMapper?: (raw: any) => OAuthUserInfo;
+    allowedImageHosts: string[]
 }
 
 export interface StoredToken {
