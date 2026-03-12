@@ -3,7 +3,6 @@
 import http from "node:http"
 import crypto from "node:crypto"
 
-import { app, BrowserWindow, shell } from "electron"
 import keytar from "keytar"
 import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
 import { OAUTH_PROVIDERS, type OAuthProviderConfig } from "./oauth-config"
