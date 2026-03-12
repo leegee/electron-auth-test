@@ -1,7 +1,9 @@
 // src/main/oauth-plugin/index.ts
+
 import http from "node:http"
 import crypto from "node:crypto"
 
+import { shell } from "electron"
 import keytar from "keytar"
 
 import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
