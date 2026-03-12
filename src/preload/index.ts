@@ -11,6 +11,7 @@ const keytarApi: KeytarApi = {
 const oauthApi: OAuthApi = {
   oauthLogin: (provider) => ipcRenderer.invoke('oauth-login', provider),
   getToken: (provider) => ipcRenderer.invoke('oauth-get-token', provider),
+  getUserInfo: (provider) => ipcRenderer.invoke('oauth-get-user-info', provider),
   logout: (provider) => ipcRenderer.invoke('oauth-logout', provider),
   getOauthProviders: () => ipcRenderer.invoke('oauth-providers'),
 };

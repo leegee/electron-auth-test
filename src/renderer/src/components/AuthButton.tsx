@@ -45,7 +45,7 @@ export default function AuthButton() {
                                     onClick={auth.logout}
                                     disabled={auth.loading()}
                                 >
-                                    <img src={provider.icon} alt={`${provider.name} logo`} />
+                                    <img src={auth.getUserInfo()?.avatarUrl || provider.icon} alt={`${provider.name} logo`} />
                                     <span>Sign out of {provider.name}</span>
                                 </button>
                             );

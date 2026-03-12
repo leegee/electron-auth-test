@@ -71,6 +71,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
             }
         } catch (err) {
             setAuthorised(false);
+            log.error(err);
             showToast(`Error signing in to ${providerName}: ${(err as Error).message}`, 'error', 5000);
         } finally {
             setLoading(false);
