@@ -9,9 +9,9 @@ import icon from '../../resources/icon.png?asset';
 import log, { /*enableRendererDependencyLogging, enableRequestLogging */ } from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
-import customProtocol from './custom-protocol';
+// import customProtocol from './custom-protocol';
 
-if (!is.dev) customProtocol.init();
+// if (!is.dev) customProtocol.init();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -29,7 +29,7 @@ if (!app.requestSingleInstanceLock()) {
 
     const mainWindow = createWindow();
 
-    if (!is.dev) customProtocol.register();
+    // if (!is.dev) customProtocol.register();
 
     initAutoUpdates(mainWindow);
 
