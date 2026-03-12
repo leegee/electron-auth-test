@@ -49,7 +49,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
             const token = await api.getToken(providerName);
             if (token) {
                 setAuthorised(true);
-                showToast('Auto-login via cached token', 'success', 3000);
+                showToast(`You have been signed into ${providerName}`, 'success', 3000);
                 return;
             }
 
@@ -67,21 +67,21 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
             }
         } catch (err) {
             setAuthorised(false);
-            showToast(`Login error: ${(err as Error).message}`, 'error', 5000);
+            showToast(`Error signing in to ${providerName}: ${(err as Error).message}`, 'error', 5000);
         } finally {
             setLoading(false);
         }
     };
 
     const logout = async () => {
-        const provider = selectedProviderName();
-        if (!provider) return;
+        const providerName = selectedProviderName();
+        if (!providerName) return;
 
         setLoading(true);
         try {
-            await api.logout(provider);
+            await api.logout(providerName);
             setAuthorised(false);
-            showToast('Logged out', 'success', 3000);
+            showToast(`You have been signed out of ${providerName}`, 'success', 3000);
         } catch (err) {
             showToast(`Logout error: ${(err as Error).message}`, 'error', 5000);
         } finally {
