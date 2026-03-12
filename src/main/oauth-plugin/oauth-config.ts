@@ -18,23 +18,34 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
         userInfoMapper: (rawUserData: any) => ({
             id: rawUserData.id,
             name: rawUserData.name,
-            avatarUrl: rawUserData.avatar_url
+            avatarUrl: rawUserData.avatar_url,
+            email: rawUserData.email,
         })
-
     },
+
     google: {
         name: 'Google',
-        icon: ("assets/Google_G_Logo.svg"),
+        icon: "assets/Google_G_Logo.svg",
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
         clientId: config.getClientId('google'),
         requiresClientSecret: true,
         scopes: ["openid", "profile", "email"],
+
         extraAuthParams: {
             access_type: "offline",
             prompt: "consent"
         },
+
         refreshTokenUrl: "https://oauth2.googleapis.com/token",
-        allowedImageHosts: [],
+        userInfoUrl: "https://www.googleapis.com/oauth2/v3/userinfo",
+        allowedImageHosts: ["https://lh3.googleusercontent.com"],
+        userInfoMapper: (rawUserData: any) => ({
+            id: rawUserData.sub,
+            name: rawUserData.name,
+            avatarUrl: rawUserData.picture,
+            email: rawUserData.email,
+        })
     },
+
 };
