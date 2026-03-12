@@ -5,35 +5,23 @@ import type { OAUTH_PROVIDERS, OAuthProviderConfig } from 'src/main/oauth-plugin
 import type { ElectronOAuthPlugin } from '.';
 
 export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
-    ipcMain.handle("activate-app", async (_event, activationKey: string, provider: keyof typeof OAUTH_PROVIDERS) => {
-        try {
-            return await oauthPlugin.activate(provider, activationKey);
-        } catch (err) {
-            return {
-                success: false,
-                error: (err as Error).message
-            };
-        }
-    });
+    ipcMain.handle("oauth-activate-app",
+        (_event, activationKey: string, provider: keyof typeof OAUTH_PROVIDERS) => oauthPlugin.activate(provider, activationKey)
+    );
 
-    ipcMain.handle("oauth-login", async (_e, providerName: string) => {
-        const token = await oauthPlugin.login(providerName);
-        return { success: !!token, token };
-    });
+    ipcMain.handle("oauth-login",
+        (_e, providerName: string) => oauthPlugin.login(providerName)
+    );
 
-    ipcMain.handle("oauth-get-token", async (_e, providerName: string) => {
-        return await oauthPlugin.getToken(providerName);
-    });
+    ipcMain.handle("oauth-get-token",
+        (_e, providerName: string) => oauthPlugin.getToken(providerName)
+    );
 
-    ipcMain.handle("oauth-logout", async (_e, providerName: string) => {
-        await oauthPlugin.logout(providerName);
-        return true;
-    });
+    ipcMain.handle("oauth-logout",
+        (_e, providerName: string) => oauthPlugin.logout(providerName)
+    );
 
-    ipcMain.handle("store-client-secret", async (_e, providerName: string, secret: string) => {
-        await oauthPlugin.setClientSecret(providerName, secret);
-        return true;
-    });
-
-    ipcMain.handle('oauth-providers', (): OAuthProviderConfig => oauthPlugin.getOauthProviders())
+    ipcMain.handle('oauth-providers',
+        (): OAuthProviderConfig => oauthPlugin.getOauthProviders()
+    )
 }
