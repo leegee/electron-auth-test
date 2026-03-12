@@ -322,7 +322,8 @@ export class ElectronOAuthPlugin {
     }
 
     async getUserInfo(providerName: string): Promise<OAuthUserInfo | null> {
-        const storedUser = await keytar.getPassword(this.userStoreServiceName, providerName);
+        const storeKey = this.userStoreServiceName + '-' + providerName;
+        const storedUser = localStorage.getItem(storeKey);
         if (storedUser) return JSON.parse(storedUser);
 
         const token = await this.getToken(providerName);
@@ -347,9 +348,10 @@ export class ElectronOAuthPlugin {
             let userData = await res.json();
             if (provider.userInfoMapper) userData = provider.userInfoMapper(userData);
 
-            await keytar.setPassword(this.userStoreServiceName, providerName, JSON.stringify(userData));
+            localStorage.setItem(storeKey, JSON.stringify(userData));
             return userData;
-        } catch (err) {
+        }
+        catch (err) {
             log.error(`Failed to fetch user info for ${providerName}:`, err);
             return null;
         }
