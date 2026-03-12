@@ -6,16 +6,24 @@ import crypto from "node:crypto"
 import { shell } from "electron"
 import keytar from "keytar"
 import type { ProviderConfig, StoredToken } from "@shared/oauth-types"
-import type { OAuthProviderConfig } from "./oauth-config"
+import { OAUTH_PROVIDERS, type OAuthProviderConfig } from "./oauth-config"
 import log from "../logger"
 import { decryptActivationKey } from "./oauth-crypt"
 import { initAuthIpc } from "./oauth-ipc-main"
 
-export interface OAuthPluginConfig {
+export interface OAuthPluginArgs {
     serviceName: string
     secretServiceName: string
-    providers: OAuthProviderConfig,
     buildPassword: string
+}
+
+type OAuthPluginConfig = OAuthPluginArgs & { providers: OAuthProviderConfig };
+
+type LoginRV = {
+    success?: boolean
+    token?: StoredToken
+    activationRequired?: boolean
+    error?: object
 }
 
 let loginInProgressMap = new Set<string>();
@@ -96,18 +104,19 @@ function isTokenExpired(token: StoredToken) {
 
 export class ElectronOAuthPlugin {
     private config: OAuthPluginConfig
-    private onRequireActivation?: (providerName: string) => void;
 
-    constructor(config: OAuthPluginConfig, onRequireActivation?: (providerName: string) => void) {
-        this.config = config;
-        this.onRequireActivation = onRequireActivation;
+    constructor(config: OAuthPluginArgs) {
+        this.config = {
+            providers: OAUTH_PROVIDERS,
+            ...config
+        };
     }
 
     initIpc() {
         initAuthIpc(this);
     }
 
-    async login(providerName: string): Promise<StoredToken | undefined> {
+    async login(providerName: string): Promise<LoginRV | undefined> {
         const provider = this.config.providers[providerName];
         if (!provider) throw new Error(`Unknown provider: ${providerName}`);
         if (loginInProgressMap.has(providerName)) throw new Error("Another OAuth login is in progress");
@@ -117,22 +126,23 @@ export class ElectronOAuthPlugin {
         try {
             let clientSecret: string | undefined;
 
+            log.log('oaouth.login provider.requiresClientSecret', provider.requiresClientSecret);
             if (provider.requiresClientSecret) {
                 const secret = await this.getClientSecret(providerName);
                 if (!secret) {
-                    this.onRequireActivation?.(providerName);
-                    return undefined;
+                    log.log('oaouth.login no secret, require activation for', providerName);
+                    return { activationRequired: true };
                 }
+                log.log('oaouth.login got secret');
                 clientSecret = secret;
             }
 
             const token = await this.runOAuthFlow(provider, clientSecret);
 
-            if (!token)
-                return undefined;
+            if (!token) return { error: { message: 'Token not returned from provider' } };
 
             await keytar.setPassword(this.config.serviceName, providerName, JSON.stringify(token));
-            return token;
+            return { success: true, token };
         }
         finally {
             loginInProgressMap.delete(providerName);
@@ -277,25 +287,29 @@ export class ElectronOAuthPlugin {
         return await keytar.deletePassword(this.config.secretServiceName, providerName);
     }
 
-    async activate(providerName: string, activationKey: string) {
+    async activate(providerName: string, activationKey: string): Promise<{ success: boolean, error?: Error }> {
         log.log("Received activate-app", providerName);
 
-        const providerSecret = await decryptActivationKey(
-            activationKey,
-            this.config.buildPassword,
-        );
+        try {
+            const providerSecret = await decryptActivationKey(
+                activationKey,
+                this.config.buildPassword,
+            );
 
-        if (providerSecret.provider !== providerName) {
-            log.log(`activation provider mismatch: wanted ${providerName} but key contained ${providerSecret.provider}`);
-            return {
-                success: false,
-                error: "Activation key provider mismatch"
-            };
+            if (providerSecret.provider !== providerName) {
+                log.log(`activation provider mismatch: wanted ${providerName} but key contained ${providerSecret.provider}`);
+                return {
+                    success: false,
+                    error: new Error("Activation key provider mismatch")
+                };
+            }
+
+            await this.setClientSecret(providerName, providerSecret.secret);
+            return { success: true };
         }
-
-        await this.setClientSecret(providerName, providerSecret.secret);
-
-        return { success: true };
+        catch (error) {
+            return { success: false, error: error as Error };
+        }
     }
 
     getOauthProviders(): OAuthProviderConfig {

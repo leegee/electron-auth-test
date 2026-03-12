@@ -53,14 +53,15 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
                 return;
             }
 
-            const result = await api.oauthLogin(provider);
-            if (result?.error === 'incorrect_client_credentials' || result.activationRequired) {
+            const loginRv = await api.oauthLogin(provider);
+            log.log('AuthContext.login rv from api.oauthLogin for', provider, loginRv)
+            if (loginRv?.error === 'incorrect_client_credentials' || loginRv.activationRequired) {
                 setActivationRequired(true);
                 setAuthorised(false);
                 showToast('Activation required for this account', 'warning', 4000);
-            } else if (result?.error) {
+            } else if (loginRv?.error) {
                 setAuthorised(false);
-                showToast(`Login failed: ${result.error}`, 'error', 5000);
+                showToast(`Login failed: ${loginRv.error}`, 'error', 5000);
             } else {
                 setAuthorised(true);
                 showToast('Login successful!', 'success', 3000);

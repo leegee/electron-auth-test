@@ -5,9 +5,9 @@ import path from 'node:path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import { config } from '@shared/config';
-import { OAUTH_PROVIDERS } from './oauth-plugin/oauth-config';
 import icon from '../../resources/icon.png?asset';
-import log, { enableRendererDependencyLogging, enableRequestLogging } from './logger';
+import log from './logger';
+// import log, { enableRendererDependencyLogging, enableRequestLogging } from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
 import customProtocol from './custom-protocol';
@@ -33,16 +33,11 @@ if (!app.requestSingleInstanceLock()) {
     if (!is.dev) customProtocol.register();
 
 
-    const oauthPlugin = new ElectronOAuthPlugin(
-      {
-        serviceName: config.VITE_SERVICE_NAME,
-        secretServiceName: config.VITE_SECRET_SERVICE_NAME,
-        buildPassword: config.VITE_BUILD_PASSWORD,
-        providers: OAUTH_PROVIDERS,
-      },
-      (providerName: string) => mainWindow.webContents.send("oauth-require-activation", providerName),
-    );
-    oauthPlugin.initIpc();
+    new ElectronOAuthPlugin({
+      serviceName: config.VITE_SERVICE_NAME,
+      secretServiceName: config.VITE_SECRET_SERVICE_NAME,
+      buildPassword: config.VITE_BUILD_PASSWORD,
+    }).initIpc();
 
     initAutoUpdates(mainWindow);
 

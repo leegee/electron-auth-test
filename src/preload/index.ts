@@ -16,7 +16,7 @@ const oauthApi: OAuthApi = {
 };
 
 const activationApi: ActivationApi = {
-  activateApp: (key, provider) => ipcRenderer.invoke('activate-app', key, provider),
+  activateApp: (key, provider) => ipcRenderer.invoke('oauth-activate-app', key, provider),
 };
 
 const updatesApi: UpdatesApi = {
