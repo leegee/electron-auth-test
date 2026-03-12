@@ -1,9 +1,9 @@
 // src/main/oauth-plugin/index.ts
-
 import http from "node:http"
 import crypto from "node:crypto"
 
 import keytar from "keytar"
+
 import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
 import { OAUTH_PROVIDERS, type OAuthProviderConfig } from "./oauth-config"
 import log from "../logger"
