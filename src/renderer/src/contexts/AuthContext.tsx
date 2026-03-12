@@ -89,7 +89,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
         }
     };
 
-    // Expose providers as a read-only accessor
+    // Exposed to provider as a read-only accessor
     const getProviders = () => providers();
 
     return (
