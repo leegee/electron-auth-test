@@ -7,10 +7,9 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import { config } from '@shared/config';
 import { OAUTH_PROVIDERS } from './oauth-plugin/oauth-config';
 import icon from '../../resources/icon.png?asset';
-import log from './logger';
+import log, { enableRendererDependencyLogging, enableRequestLogging } from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
-import { enableRendererDependencyLogging, enableRequestLogging } from './log-requests';
 import customProtocol from './custom-protocol';
 
 if (!is.dev) customProtocol.init();
