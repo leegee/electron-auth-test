@@ -1,5 +1,9 @@
 # electron-secure-test
 
+![Screenshot](./README.png)
+
+## Synopsis
+
 An Electron / Solid / TypeScript example of PKCE OAuth2.0.
 
 1. Configure GitHub OAuth2.0 in [Developer Settings](https://github.com/settings/developers) 
