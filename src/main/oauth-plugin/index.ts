@@ -3,7 +3,7 @@
 import http from "node:http"
 import crypto from "node:crypto"
 
-import { shell } from "electron"
+import { app, BrowserWindow, shell } from "electron"
 import keytar from "keytar"
 import type { OAuthUserInfo, ProviderConfig, StoredToken } from "@shared/oauth-types"
 import { OAUTH_PROVIDERS, type OAuthProviderConfig } from "./oauth-config"
@@ -115,7 +115,16 @@ export class ElectronOAuthPlugin {
         this.userStoreServiceName = this.config.serviceName + '-user';
     }
 
-    initIpc() {
+    init() {
+        if (process.env.CLEAN) {
+            const promises: Promise<boolean>[] = [];
+            for (const provider of Object.keys(this.config.providers)) {
+                promises.push(keytar.deletePassword(this.config.secretServiceName, provider));
+                promises.push(keytar.deletePassword(this.config.serviceName, provider));
+                // localStorage.removeItem(this.getUserServiceName(provider));
+            }
+        }
+
         initAuthIpc(this);
     }
 
@@ -318,14 +327,28 @@ export class ElectronOAuthPlugin {
     }
 
     getOauthProviders(): OAuthProviderConfig {
-        return this.config.providers;
+        const plainProviders: Record<string, any> = {};
+        // remove functions
+        for (const [name, provider] of Object.entries(this.config.providers)) {
+            const { userInfoMapper, ...rest } = provider;
+            plainProviders[name] = rest;
+        }
+        return plainProviders;
+    }
+
+    getUserServiceName(providerName: string) {
+        return this.userStoreServiceName + '-' + providerName;
     }
 
     async getUserInfo(providerName: string): Promise<OAuthUserInfo | null> {
-        const storeKey = this.userStoreServiceName + '-' + providerName;
-        const storedUser = localStorage.getItem(storeKey);
+        // Use keytar as persistent store
+        const storeKey = this.getUserServiceName(providerName);
+
+        // Try to get cached user from keytar
+        const storedUser = await keytar.getPassword(this.userStoreServiceName, storeKey);
         if (storedUser) return JSON.parse(storedUser);
 
+        // Get valid OAuth token
         const token = await this.getToken(providerName);
         if (!token?.access_token) return null;
 
@@ -336,8 +359,8 @@ export class ElectronOAuthPlugin {
             const res = await fetch(provider.userInfoUrl, {
                 headers: {
                     Authorization: `Bearer ${token.access_token}`,
-                    Accept: "application/json"
-                }
+                    Accept: "application/json",
+                },
             });
 
             if (!res.ok) {
@@ -348,10 +371,11 @@ export class ElectronOAuthPlugin {
             let userData = await res.json();
             if (provider.userInfoMapper) userData = provider.userInfoMapper(userData);
 
-            localStorage.setItem(storeKey, JSON.stringify(userData));
+            // Store user info securely in keytar
+            await keytar.setPassword(this.userStoreServiceName, storeKey, JSON.stringify(userData));
+
             return userData;
-        }
-        catch (err) {
+        } catch (err) {
             log.error(`Failed to fetch user info for ${providerName}:`, err);
             return null;
         }

@@ -35,18 +35,15 @@ if (Object.keys(providers).length === 0) {
 if (process.env.CLEAN) {
     if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
+        console.info(`Cleaned credentials file for ${VITE_SERVICE_NAME}`);
     }
 
-    for (const provider of Object.keys(providers)) {
-        await keytar.deletePassword(VITE_SECRET_SERVICE_NAME, provider);
-        console.log('Delete keytar ', VITE_SECRET_SERVICE_NAME, provider);
-        await keytar.deletePassword(VITE_SERVICE_NAME, provider);
-        console.log('Delete keytar ', VITE_SERVICE_NAME, provider);
-        await keytar.deletePassword(VITE_SERVICE_NAME + '-user', provider);
-        console.log('Delete keytar ', VITE_SERVICE_NAME + '-user', provider);
-    }
-
-    console.info(`Cleaned credentials for ${VITE_SERVICE_NAME}`);
+    // for (const provider of Object.keys(providers)) {
+    //     await keytar.deletePassword(VITE_SECRET_SERVICE_NAME, provider);
+    //     console.log('Delete keytar ', VITE_SECRET_SERVICE_NAME, provider);
+    //     await keytar.deletePassword(VITE_SERVICE_NAME, provider);
+    //     console.log('Delete keytar ', VITE_SERVICE_NAME, provider);
+    // }
 }
 
 

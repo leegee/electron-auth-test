@@ -37,7 +37,7 @@ if (!app.requestSingleInstanceLock()) {
       serviceName: config.VITE_SERVICE_NAME,
       secretServiceName: config.VITE_SECRET_SERVICE_NAME,
       buildPassword: config.VITE_BUILD_PASSWORD,
-    }).initIpc();
+    }).init();
 
     initAutoUpdates(mainWindow);
 
