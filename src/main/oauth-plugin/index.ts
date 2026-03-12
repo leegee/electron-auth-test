@@ -58,7 +58,10 @@ async function exchangeCode(
         body: new URLSearchParams(body)
     });
 
-    if (!res.ok) throw new Error(`Token exchange failed: ${res.status}`);
+    if (!res.ok) {
+        log.warn(JSON.stringify(res, null, 4));
+        throw new Error(`Token exchange failed: ${res.status}`);
+    }
     const token = await res.json();
     token.obtained_at = Date.now();
     return token;
@@ -173,7 +176,6 @@ export class ElectronOAuthPlugin {
             }, 180_000);
 
             server = http.createServer(async (req, res) => {
-
                 try {
                     const url = new URL(req.url!, redirectUrl);
                     if (url.pathname !== "/callback")
@@ -201,7 +203,7 @@ export class ElectronOAuthPlugin {
                 }
             });
 
-            server.listen(port);
+            server.listen(port, () => log.log(`LOGIN SERVER listening on ${port} for ${redirectUrl} `));
 
             const authParams = new URLSearchParams({
                 client_id: provider.clientId,
@@ -266,10 +268,8 @@ export class ElectronOAuthPlugin {
     }
 
     async getClientSecret(providerName: string): Promise<string | null> {
-        return await keytar.getPassword(
-            this.config.secretServiceName,
-            providerName
-        );
+        log.log(`getClientSecret from ${this.config.secretServiceName} for ${providerName}`)
+        return await keytar.getPassword(this.config.secretServiceName, providerName);
     }
 
     async deleteClientSecret(providerName: string): Promise<boolean> {

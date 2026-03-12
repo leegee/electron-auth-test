@@ -40,15 +40,15 @@ if (!app.requestSingleInstanceLock()) {
         buildPassword: config.VITE_BUILD_PASSWORD,
         providers: OAUTH_PROVIDERS,
       },
-      (providerName) => mainWindow.webContents.send("oauth-require-activation", providerName),
+      (providerName: string) => mainWindow.webContents.send("oauth-require-activation", providerName),
     );
     oauthPlugin.initIpc();
 
     initAutoUpdates(mainWindow);
 
     if (is.dev) {
-      enableRequestLogging(mainWindow);
-      enableRendererDependencyLogging();
+      // enableRequestLogging(mainWindow);
+      // enableRendererDependencyLogging();
       app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window));
     }
 

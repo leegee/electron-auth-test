@@ -18,9 +18,10 @@ export const OAUTH_PROVIDERS: OAuthProviderConfig = {
     google: {
         name: 'Google',
         icon: ("assets/Google_G_Logo.svg"),
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?prompt=consent&response_type=code&access_type=offline&scope=openid%20email%20profile&',
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
         tokenUrl: 'https://oauth2.googleapis.com/token',
         clientId: config.getClientId('google'),
+        requiresClientSecret: true,
         scopes: ["openid", "profile", "email"],
         extraAuthParams: {
             access_type: "offline",
