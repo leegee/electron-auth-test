@@ -3,6 +3,7 @@ import { api } from '@renderer/renderer-bridge';
 import { showToast } from '../components/Toast';
 import { ActivationModal } from '../components/ActivationModal';
 import log from '../lib/logger';
+import { OAuthUserInfo } from '../../../shared/oauth-types';
 
 export type Provider = {
     name: string;
@@ -15,7 +16,8 @@ export type AuthContextType = {
     selectedProvider: () => string | null;
     login: (provider: string) => Promise<void>;
     logout: () => Promise<void>;
-    getProviders: () => Record<string, Provider>; // <-- accessor for renderer
+    getProviders: () => Record<string, Provider>;
+    getUserInfo: () => OAuthUserInfo | null;
 };
 
 const AuthContext = createContext<AuthContextType>();
@@ -30,6 +32,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
     const [activationRequired, setActivationRequired] = createSignal(false);
     const [providers, setProviders] = createSignal<Record<string, Provider>>({});
     const [selectedProviderName, setSelectedProviderName] = createSignal<string | null>(null);
+    const [userInfo, setUserInfo] = createSignal<OAuthUserInfo | null>(null)
 
     onMount(async () => {
         try {
@@ -63,6 +66,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
                 showToast(`Failed to sign in to ${providerName}: ${loginRv.error}`, 'error', 5000);
             } else {
                 setAuthorised(true);
+                setUserInfo(await api.getUserInfo(providerName));
                 showToast(`Signed in to ${providerName}`, 'success', 3000);
             }
         } catch (err) {
@@ -89,12 +93,13 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
         }
     };
 
-    // Exposed to provider as a read-only accessor
+    // Exposed to provider as a read-only accessors
     const getProviders = () => providers();
+    const getUserInfo = () => userInfo();
 
     return (
         <AuthContext.Provider
-            value={{ authorised, loading, selectedProvider: selectedProviderName, login, logout, getProviders }}
+            value={{ authorised, loading, selectedProvider: selectedProviderName, login, logout, getProviders, getUserInfo }}
         >
             {activationRequired() && selectedProviderName() ? (
                 <ActivationModal

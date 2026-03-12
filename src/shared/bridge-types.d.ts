@@ -1,6 +1,6 @@
 import type { OAUTH_PROVIDERS, OAuthProviderConfig } from 'src/main/oauth-plugin/oauth-config';
 import type { StoredToken } from '../main/oauth-plugin'
-import type { OAuthTokenResponseBad } from './oauth-types';
+import type { OAuthTokenResponseBad, OAuthUserInfo } from './oauth-types';
 
 export interface KeytarApi {
     getPassword(service: string, account: string, provider: keyof typeof OAUTH_PROVIDERS): Promise<string | null>;
@@ -10,6 +10,7 @@ export interface KeytarApi {
 export interface OAuthApi {
     oauthLogin(string: keyof typeof OAUTH_PROVIDERS): Promise<StoredToken>;
     getToken(provider: keyof typeof OAUTH_PROVIDERS): Promise<StoredToken | null>;
+    getUserInfo(provider: keyof typeof OAUTH_PROVIDERS): Promise<OAuthUserInfo | null>;
     logout(provider: keyof typeof OAUTH_PROVIDERS): Promise<boolean>;
     getOauthProviders(): Promise<OAuthProviderConfig>;
 }

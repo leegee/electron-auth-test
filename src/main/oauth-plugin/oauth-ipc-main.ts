@@ -17,6 +17,10 @@ export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
         (_e, providerName: string) => oauthPlugin.getToken(providerName)
     );
 
+    ipcMain.handle("oauth-get-user-info",
+        (_e, providerName: string) => oauthPlugin.getUserInfo(providerName)
+    );
+
     ipcMain.handle("oauth-logout",
         (_e, providerName: string) => oauthPlugin.logout(providerName)
     );
