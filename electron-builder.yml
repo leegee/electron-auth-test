@@ -47,7 +47,7 @@ publish:
   releaseType: release
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
-protocols:
-  - name: electronsectest Test Protocol
-    schemes:
-      - electronsectest
+# protocols:
+#   - name: electronsectest Test Protocol
+#     schemes:
+#       - electronsectest
