@@ -20,6 +20,14 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
         log.info('No update available');
     });
 
+    autoUpdater.on('download-progress', (progress) => {
+        mainWindow.webContents.send('update-progress', {
+            percent: progress.percent,
+            transferred: progress.transferred,
+            total: progress.total,
+        });
+    });
+
     autoUpdater.on('error', (err) => {
         log.error('Update error:', err);
         mainWindow.webContents.send('update-error', err.message);
@@ -30,16 +38,20 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
         mainWindow.webContents.send('update-downloaded');
     });
 
-    autoUpdater.checkForUpdates().catch(err => log.error('Failed to check updates', err));
+    ipcMain.on('download-update', () => {
+        autoUpdater.downloadUpdate();
+    });
+
+    ipcMain.on('install-update', () => {
+        // (isSilent, runAfterUpdate)
+        autoUpdater.quitAndInstall(false, true);
+    });
+
+    // Delayed so as not to slow down launch
+    setTimeout(() => {
+        autoUpdater.checkForUpdates().catch(err => log.error('Failed to check updates', err));
+    }, 5000);
 
     log.info('Auto-updater initialized');
 }
-
-ipcMain.on('download-update', () => {
-    autoUpdater.downloadUpdate();
-});
-
-ipcMain.on('install-update', () => {
-    autoUpdater.quitAndInstall();
-});
 
