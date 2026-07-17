@@ -1,11 +1,13 @@
+// preload/index.ts
+
 import { contextBridge, ipcRenderer } from 'electron';
 // import 'electron-log/preload';
 
 import type { ApiBridge, KeytarApi, OAuthApi, ActivationApi, UpdatesApi } from '../shared/bridge-types';
 
 const keytarApi: KeytarApi = {
-  getPassword: (service, account, provider) => ipcRenderer.invoke('keytar-get-password', service, account + '-' + provider),
-  deletePassword: (service, account, provider) => ipcRenderer.send('delete-password', service, account + '-' + provider),
+  getPassword: (service, account, provider) => ipcRenderer.invoke('keytar-get-password', service, account + '-' + String(provider)),
+  deletePassword: (service, account, provider) => ipcRenderer.send('delete-password', service, account + '-' + String(provider)),
 };
 
 const oauthApi: OAuthApi = {
