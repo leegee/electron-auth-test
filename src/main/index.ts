@@ -6,10 +6,14 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 
 import { config } from '@shared/config';
 import icon from '../../resources/icon.png?asset';
-import log, { /*enableRendererDependencyLogging, enableRequestLogging */ } from './logger';
 import { ElectronOAuthPlugin } from './oauth-plugin';
 import { initAutoUpdates } from './auto-updates';
 // import customProtocol from './custom-protocol';
+
+import log,
+{ /*enableRendererDependencyLogging, enableRequestLogging */ }
+  from './logger';
+
 
 // if (!is.dev) customProtocol.init();
 
