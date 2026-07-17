@@ -20,11 +20,11 @@ export interface ActivationApi {
 }
 
 export interface UpdatesApi {
-    onUpdateAvailable(cb: (version: string) => void): void;
+    onUpdateAvailable(cb: (version: string) => void): () => void;
     onUpdateError(cb: (message: string) => void): void;
     onUpdateDownloaded(cb: () => void): void;
-    downloadUpdate(): void;
-    installUpdate(): void;
+    downloadUpdate(): Promise<void>;
+    installUpdate(): Promise<void>;
 }
 
 export type ApiBridge = KeytarApi & OAuthApi & ActivationApi & UpdatesApi;

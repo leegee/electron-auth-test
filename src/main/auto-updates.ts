@@ -4,7 +4,7 @@ import log from './logger';
 
 autoUpdater.logger = log;
 
-let updateReady = false;
+let updateState: "ready" | "downloading" | "" = "";
 
 export function initAutoUpdates(mainWindow: BrowserWindow) {
     autoUpdater.autoDownload = false;
@@ -36,17 +36,22 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
     });
 
     autoUpdater.on('update-downloaded', () => {
-        updateReady = true;
+        updateState = "ready";
         log.info('Update downloaded, will install on quit');
         mainWindow.webContents.send('update-downloaded');
     });
 
     ipcMain.on('download-update', () => {
+        if (updateState === 'downloading') {
+            throw new Error('Update already downloading');
+        }
+
+        updateState = 'downloading';
         autoUpdater.downloadUpdate();
     });
 
     ipcMain.on('install-update', () => {
-        if (!updateReady) {
+        if (updateState !== "ready") {
             throw new Error('No update ready');
         }
 

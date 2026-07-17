@@ -23,7 +23,17 @@ const activationApi: ActivationApi = {
 };
 
 const updatesApi: UpdatesApi = {
-  onUpdateAvailable: (cb: (version: string) => void) => ipcRenderer.on('update-available', (_e, version) => cb(version)),
+  onUpdateAvailable: (cb) => {
+    const listener = (_e: Electron.IpcRendererEvent, version: string) =>
+      cb(version);
+
+    ipcRenderer.on('update-available', listener);
+
+    return () => {
+      ipcRenderer.removeListener('update-available', listener);
+    };
+  },
+
   onUpdateError: (cb: (message: string) => void) => ipcRenderer.on('update-error', (_e, msg) => cb(msg)),
   onUpdateDownloaded: (cb: () => void) => ipcRenderer.on('update-downloaded', cb),
   downloadUpdate: () => ipcRenderer.send('download-update'),
