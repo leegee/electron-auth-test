@@ -4,6 +4,8 @@ import log from './logger';
 
 autoUpdater.logger = log;
 
+let updateReady = false;
+
 export function initAutoUpdates(mainWindow: BrowserWindow) {
     autoUpdater.autoDownload = false;
 
@@ -34,6 +36,7 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
     });
 
     autoUpdater.on('update-downloaded', () => {
+        updateReady = true;
         log.info('Update downloaded, will install on quit');
         mainWindow.webContents.send('update-downloaded');
     });
@@ -43,6 +46,10 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
     });
 
     ipcMain.on('install-update', () => {
+        if (!updateReady) {
+            throw new Error('No update ready');
+        }
+
         // (isSilent, runAfterUpdate)
         autoUpdater.quitAndInstall(false, true);
     });
