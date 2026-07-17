@@ -42,7 +42,7 @@ npmRebuild: false
 publish:
   provider: github
   owner: leegee
-  repo: electron-auth-test
+  repo: electron-secure-test
   private: false   
   releaseType: release
 electronDownload:
