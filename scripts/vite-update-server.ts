@@ -21,9 +21,12 @@ export function electronUpdateServer({ dir, port, }: {
             }
 
             server = createServer((req, res) => {
-                const urlPath = decodeURIComponent(
-                    req.url ?? '/'
-                );
+                const urlPath = new URL(
+                    req.url ?? "/",
+                    `http://${ req.headers.host }`
+                ).pathname;
+
+                console.log("[update-server]", req.method, req.url, urlPath);
 
                 const filePath = path.join(
                     dir,

@@ -1,8 +1,8 @@
-version: 0.0.2
+version: 1.0.1
 files:
-  - url: electron-secure-test-0.0.2-setup.exe
-    sha512: <hash>
-    size: <bytes>
-path: electron-secure-test-0.0.2-setup.exe
-sha512: <hash>
-releaseDate: '2026-07-20T14:00:00.000Z'
+  - url: electron-secure-test-1.0.1-setup.exe
+    sha512: d0/qTSgqHafNbMOOoZ2ajNZZnlOf8umaYmZe+bs8ApJKOoXWHmoYmFGfpLT4D+LmEA33Cxv4HTLMm3ogHO4Guw==
+    size: 100853678
+path: electron-secure-test-1.0.1-setup.exe
+sha512: d0/qTSgqHafNbMOOoZ2ajNZZnlOf8umaYmZe+bs8ApJKOoXWHmoYmFGfpLT4D+LmEA33Cxv4HTLMm3ogHO4Guw==
+releaseDate: '2026-07-20T14:53:18.958Z'

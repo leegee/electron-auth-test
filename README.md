@@ -20,3 +20,13 @@ An Electron / Solid / TypeScript example of PKCE OAuth2.0.
 ## TODO
 
 Tests
+
+## AUTO-UPDATE DEV
+
+Bump version then:
+
+    bun run build:win      # As admin or in Win, in Windows "developer mode"
+    cp dist/latest.yml electron-updates/
+    cp dist/electron-secure-test-*-setup.exe electron-updates/
+    cp dist/electron-secure-test-*-setup.exe.blockmap electron-updates/
+

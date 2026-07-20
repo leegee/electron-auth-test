@@ -8,3 +8,6 @@ out
 .env.development
 activation-key*
 src/main/custom-protocol.ts
+electron-updates/electron-secure-test-*-setup.exe.blockmap
+electron-updates/electron-secure-test-*-setup.exe
+electron-updates/latest.yml

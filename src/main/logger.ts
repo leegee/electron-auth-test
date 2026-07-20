@@ -13,10 +13,10 @@ const logFile = log.transports.file.getFile()?.path;
 try {
     if (logFile && fs.existsSync(logFile)) {
         fs.unlinkSync(logFile);
-        console.log(`Cleared old log: ${logFile}`);
+        console.debug(`[logger] Cleared old log: ${ logFile }`);
     }
 } catch (err) {
-    console.warn('Failed to clear log file:', err);
+    console.warn('[logger] Failed to clear log file:', err);
 }
 
 
@@ -24,20 +24,20 @@ export function enableRequestLogging(mainWindow: BrowserWindow) {
     const filter = { urls: ['*://*/*'] };
 
     mainWindow.webContents.on('did-fail-load', (_, code, desc, url) => {
-        log.error('LOAD FAILED:', code, desc, url);
+        log.error('[logger.mainWindow] LOAD FAILED:', code, desc, url);
     });
 
     session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
-        log.info('REQUEST:', details.resourceType, details.method, details.url);
+        log.info('[logger.session] REQUEST:', details.resourceType, details.method, details.url);
         callback({});
     });
 
     session.defaultSession.webRequest.onCompleted(filter, (details) => {
-        log.info('RESPONSE:', details.statusCode, details.url);
+        log.info('[logger.session] RESPONSE:', details.statusCode, details.url);
     });
 
     session.defaultSession.webRequest.onErrorOccurred(filter, (details) => {
-        log.error('FAILED:', details.error, details.url);
+        log.error('[logger.session] FAILED:', details.error, details.url);
     });
 }
 
@@ -50,8 +50,8 @@ export function enableRendererDependencyLogging() {
         const parent = details.referrer || 'ROOT'
 
         log.info(
-            `LOAD ${details.resourceType}`,
-            `${parent}  →  ${details.url}`
+            `[logger.enableRendererDependencyLogging] LOAD ${ details.resourceType }`,
+            `${ parent }  →  ${ details.url }`
         )
 
         callback({})
@@ -59,8 +59,8 @@ export function enableRendererDependencyLogging() {
 
     session.defaultSession.webRequest.onErrorOccurred(filter, (details) => {
         log.error(
-            `FAILED ${details.resourceType}`,
-            `${details.referrer || 'ROOT'}  →  ${details.url}`,
+            `[logger.enableRendererDependencyLogging] FAILED ${ details.resourceType }`,
+            `${ details.referrer || 'ROOT' }  →  ${ details.url }`,
             details.error
         )
     })
