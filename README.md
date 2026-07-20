@@ -19,7 +19,8 @@ An Electron / Solid / TypeScript example of PKCE OAuth2.0.
 
 ## TODO
 
-Tests
+* Tests
+* Update signing
 
 ## AUTO-UPDATE DEV
 
