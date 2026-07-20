@@ -8,7 +8,8 @@
     "src/shared/*.ts",
     "src/global.d.ts",
     "./logger.ts",
-    "src/main/**/*"
+    "src/main/**/*",
+    "scripts/*.ts",
   ],
   "compilerOptions": {
     "composite": true,

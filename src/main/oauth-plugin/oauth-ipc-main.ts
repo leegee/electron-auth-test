@@ -1,8 +1,8 @@
 // src/main/oauth-plugin/ipc-main-bridge.ts
 import { ipcMain } from 'electron';
 
-import type { OAUTH_PROVIDERS, OAuthProviderConfig } from 'src/main/oauth-plugin/oauth-config';
 import type { ElectronOAuthPlugin } from '.';
+import { OAUTH_PROVIDERS, OAuthProviderConfig } from './oauth-config';
 
 export function initAuthIpc(oauthPlugin: ElectronOAuthPlugin) {
     ipcMain.handle("oauth-activate-app",

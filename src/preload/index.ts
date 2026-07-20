@@ -36,8 +36,8 @@ const updatesApi: UpdatesApi = {
 
   onUpdateError: (cb: (message: string) => void) => ipcRenderer.on('update-error', (_e, msg) => cb(msg)),
   onUpdateDownloaded: (cb: () => void) => ipcRenderer.on('update-downloaded', cb),
-  downloadUpdate: () => ipcRenderer.send('download-update'),
-  installUpdate: () => ipcRenderer.send('install-update'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
 };
 
 const api: ApiBridge = {

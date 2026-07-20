@@ -1,0 +1,8 @@
+version: 0.0.2
+files:
+  - url: electron-secure-test-0.0.2-setup.exe
+    sha512: <hash>
+    size: <bytes>
+path: electron-secure-test-0.0.2-setup.exe
+sha512: <hash>
+releaseDate: '2026-07-20T14:00:00.000Z'

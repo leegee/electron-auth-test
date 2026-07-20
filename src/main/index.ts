@@ -35,9 +35,7 @@ if (!app.requestSingleInstanceLock()) {
 
     // if (!is.dev) customProtocol.register();
 
-    if (!is.dev) {
-      initAutoUpdates(mainWindow);
-    }
+    if (is.dev) initAutoUpdates(mainWindow);
 
     new ElectronOAuthPlugin(mainWindow, {
       serviceName: config.VITE_SERVICE_NAME,

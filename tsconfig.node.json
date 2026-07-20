@@ -5,7 +5,8 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/shared/**/*",
-    "src/global.d.ts"
+    "src/global.d.ts",
+    "scripts/*.ts",
   ],
   "compilerOptions": {
     "composite": true,

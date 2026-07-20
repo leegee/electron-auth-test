@@ -1,5 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import { is } from '@electron-toolkit/utils';
 import log from './logger';
 
 autoUpdater.logger = log;
@@ -7,7 +8,14 @@ autoUpdater.logger = log;
 let updateState: "ready" | "downloading" | "" = "";
 
 export function initAutoUpdates(mainWindow: BrowserWindow) {
+    log.info('[auto-updates] initAutoUpdates Enter');
+
+
     autoUpdater.autoDownload = false;
+
+    if (is.dev) {
+        autoUpdater.forceDevUpdateConfig = true;
+    }
 
     autoUpdater.on('checking-for-update', () => {
         log.info('Checking for updates...');
@@ -61,8 +69,17 @@ export function initAutoUpdates(mainWindow: BrowserWindow) {
 
     // Delayed so as not to slow down launch
     setTimeout(() => {
-        autoUpdater.checkForUpdates().catch(err => log.error('Failed to check updates', err));
-    }, 5000);
+        log.info('Calling checkForUpdates()');
+
+        autoUpdater.checkForUpdates()
+            .then(result => {
+                log.info('Update check result:', result?.updateInfo.version);
+            })
+            .catch(err => {
+                log.error('Failed to check updates', err);
+            });
+
+    }, 5_000);
 
     log.info('Auto-updater initialized');
 }

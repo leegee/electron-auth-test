@@ -1,6 +1,5 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import keytar from "keytar";
 
 import { decryptActivationKey, encryptActivationKey } from "../src/main/oauth-plugin/oauth-crypt";
 
@@ -35,7 +34,7 @@ if (Object.keys(providers).length === 0) {
 if (process.env.CLEAN) {
     if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
-        console.info(`Cleaned credentials file for ${VITE_SERVICE_NAME}`);
+        console.info(`Cleaned credentials file for ${ VITE_SERVICE_NAME }`);
     }
 
     // for (const provider of Object.keys(providers)) {
@@ -51,7 +50,7 @@ const activationKeys: Record<string, string> = {};
 
 for (const [provider, clientSecret] of Object.entries(providers)) {
     if (!clientSecret) {
-        console.warn(`Skipping ${provider} because client secret is missing`);
+        console.warn(`Skipping ${ provider } because client secret is missing`);
         continue;
     }
 
@@ -66,12 +65,12 @@ for (const [provider, clientSecret] of Object.entries(providers)) {
 
     activationKeys[provider] = activationKey;
 
-    console.log(`Created activation key for ${provider}\n${activationKey}\n`);
+    console.log(`Created activation key for ${ provider }\n${ activationKey }\n`);
 }
 
 fs.writeFileSync(outputPath, JSON.stringify(activationKeys, null, 2), {
     encoding: "utf-8"
 });
 
-console.log(`Activation keys written to ${outputPath}`);
+console.log(`Activation keys written to ${ outputPath }`);
 

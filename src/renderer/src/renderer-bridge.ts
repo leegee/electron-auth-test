@@ -1,4 +1,4 @@
-import { ApiBridge } from "src/shared/bridge-types"
+import { ApiBridge } from "@shared/bridge-types";
 
 export const api = window.api as ApiBridge
 

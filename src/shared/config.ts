@@ -1,5 +1,4 @@
-
-import { type OAUTH_PROVIDERS } from 'src/main/oauth-plugin/oauth-config';
+import { OAUTH_PROVIDERS } from "../main/oauth-plugin/oauth-config";
 
 /**
  * Get environment variable as string.
@@ -9,7 +8,7 @@ export function getEnv(name: string, defaultValue?: string | boolean): string {
     // const envVal = process.env[name];
     const envVal = import.meta.env[name];
     const value = envVal !== undefined ? envVal : defaultValue;
-    if (value === undefined) throw new Error(`Missing env var ${name}`);
+    if (value === undefined) throw new Error(`Missing env var ${ name }`);
     return String(value);
 }
 
@@ -30,16 +29,16 @@ export const config = {
     // VITE_CUSTOM_URL_PROTOCOL: getEnv('VITE_CUSTOM_URL_PROTOCOL', 'electronsectest'),
 
     getClientId: (provider: keyof typeof OAUTH_PROVIDERS) => {
-        const varName = 'VITE_' + provider.toUpperCase() + '_CLIENT_ID';
+        const varName = 'VITE_' + String(provider).toUpperCase() + '_CLIENT_ID';
         const rv = getEnv(varName);
-        if (!rv) throw new TypeError(`Environment variable ${varName} is not configured.`)
+        if (!rv) throw new TypeError(`Environment variable ${ varName } is not configured.`)
         return rv;
     },
 
     getClientSecret: (provider: keyof typeof OAUTH_PROVIDERS) => {
-        const varName = 'VITE_' + provider.toUpperCase() + '_CLIENT_SECRET';
+        const varName = 'VITE_' + String(provider).toUpperCase() + '_CLIENT_SECRET';
         const rv = getEnv(varName);
-        if (!rv) throw new TypeError(`Environment variable ${varName} is not configured.`)
+        if (!rv) throw new TypeError(`Environment variable ${ varName } is not configured.`)
         return rv;
     }
 } as const;
